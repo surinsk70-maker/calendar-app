@@ -540,8 +540,11 @@ body::after {
 
   <!-- GUEST BANNER -->
   <div class="guest-banner" id="guest-banner" style="display:none">
-    <span>👁 โหมด <b>Guest</b> — ดูได้อย่างเดียว ไม่สามารถแก้ไขกิจกรรมได้</span>
-    <button class="guest-login-btn" onclick="exitGuestMode()">เข้าสู่ระบบ</button>
+    <span>👁 โหมด <b>Guest</b> — ดูอย่างเดียว</span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="guest-login-btn" style="background:transparent;border-color:#00ff8833;font-weight:400" onclick="loadGuestGoogleEvents()">↻ รีโหลด</button>
+      <button class="guest-login-btn" onclick="exitGuestMode()">เข้าสู่ระบบ</button>
+    </div>
   </div>
   <!-- MAIN -->
   <div class="main">
@@ -1693,7 +1696,6 @@ function toast(msg, type='info') {
 
 // ===== GUEST MODE =====
 function enterGuestMode() {
-  // guest user object — no write permissions
   state.currentUser = {
     id: 'guest', username: 'guest', name: 'Guest', role: 'guest', lineToken: ''
   };
@@ -1705,12 +1707,76 @@ function enterGuestMode() {
   const badge = document.getElementById('top-badge');
   badge.textContent = 'GUEST';
   badge.style.cssText = 'background:#ffffff11;border:1px solid #ffffff22;color:#aaaaaa;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600';
-  // hide admin button, settings bell
   document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-  // load events read-only
-  loadEvents();
-  initGapi();
-  toast('เข้าสู่โหมด Guest — ดูได้อย่างเดียว', 'info');
+  // โหลด events จาก localStorage ก่อน แล้วค่อย fetch จาก Google Calendar ผ่าน API Key
+  state.events = getLocalEvents();
+  renderCurrentView();
+  renderMiniCal();
+  loadGuestGoogleEvents();
+  toast('เข้าสู่โหมด Guest — กำลังโหลดกิจกรรม...', 'info');
+}
+
+// โหลด Google Calendar สำหรับ Guest ผ่าน API Key เท่านั้น (ไม่ต้อง OAuth)
+async function loadGuestGoogleEvents() {
+  const el = document.getElementById('gcal-status');
+  if (el) el.innerHTML = '<span style="color:var(--cyan)">↻ กำลังโหลด...</span>';
+  try {
+    const now = new Date();
+    const timeMin = new Date(now.getFullYear() - 1, 0, 1).toISOString();
+    const timeMax = new Date(now.getFullYear() + 2, 11, 31).toISOString();
+    let allItems = [], pageToken = '';
+    do {
+      let url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CONFIG.CALENDAR_ID)}/events`
+        + `?key=${CONFIG.API_KEY}`
+        + `&timeMin=${encodeURIComponent(timeMin)}`
+        + `&timeMax=${encodeURIComponent(timeMax)}`
+        + `&singleEvents=true&orderBy=startTime&maxResults=250`;
+      if (pageToken) url += `&pageToken=${encodeURIComponent(pageToken)}`;
+      const resp = await fetch(url);
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.error?.message || resp.status);
+      }
+      const data = await resp.json();
+      allItems = allItems.concat(data.items || []);
+      pageToken = data.nextPageToken || '';
+    } while (pageToken);
+
+    const gEvents = allItems.map(ev => ({
+      id: ev.id,
+      title: ev.summary || '(ไม่มีชื่อ)',
+      start: ev.start?.dateTime || ev.start?.date || '',
+      end: ev.end?.dateTime || ev.end?.date || '',
+      desc: ev.description || '',
+      location: ev.location || '',
+      priority: ev.extendedProperties?.private?.priority || 'MEDIUM',
+      remind: 0,
+      source: 'google',
+      createdBy: 'google'
+    }));
+
+    state.events = gEvents;
+    saveLocalEvents(state.events);
+    renderCurrentView();
+    renderMiniCal();
+    const d = new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    if (el) el.innerHTML = `<span style="color:var(--green)">● โหลดแล้ว ${gEvents.length} กิจกรรม</span><div style="font-size:10px;color:var(--text3);margin-top:2px">${d}</div>`;
+    toast(`โหลด ${gEvents.length} กิจกรรมจาก Google Calendar แล้ว`, 'success');
+  } catch(e) {
+    console.error('Guest load error:', e);
+    if (el) el.innerHTML = `<span style="color:var(--red)">✗ โหลดไม่ได้: ${e.message}</span>`;
+    // ถ้า Calendar เป็น Private จะ error 403
+    if (String(e.message).includes('403') || String(e.message).includes('notFound')) {
+      toast('Calendar นี้เป็น Private — Guest ดูไม่ได้ ต้องเปิดเป็น Public ก่อน', 'error');
+      showGuestCalendarHelp();
+    } else {
+      toast('โหลดกิจกรรมไม่ได้: ' + e.message, 'error');
+    }
+  }
+}
+
+function showGuestCalendarHelp() {
+  toast('วิธีแก้: Google Calendar → Settings → ปฏิทิน → Access permissions → Make available to public', 'info');
 }
 
 function exitGuestMode() {
