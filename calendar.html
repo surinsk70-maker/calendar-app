@@ -429,6 +429,26 @@ body::after {
 .section-title { font-size:14px; font-weight:600; color:var(--green); margin-bottom:12px; letter-spacing:1px; display:flex; align-items:center; gap:8px; }
 .section-title::after { content:''; flex:1; height:1px; background:linear-gradient(to right,var(--border2),transparent); }
 
+/* ===== GUEST MODE ===== */
+.guest-banner {
+  background: linear-gradient(90deg,#00ff8822,#00ff4411);
+  border-bottom: 1px solid #00ff8840;
+  padding: 6px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; color: var(--green2); flex-shrink: 0;
+}
+.guest-banner b { color: var(--green); }
+.guest-login-btn {
+  padding: 4px 14px; background: var(--green-dim); border: 1px solid var(--green3);
+  border-radius: 6px; color: var(--green); font-size: 11px; font-family: var(--font);
+  cursor: pointer; font-weight: 600; transition: all .2s;
+}
+.guest-login-btn:hover { background: var(--green); color: var(--bg); }
+.guest-mode .add-event-btn,
+.guest-mode .quick-add-btn,
+.guest-mode .sidebar-quick-add,
+.guest-mode .topbar-actions,
+.guest-mode .icon-btn { display: none !important; }
 /* ===== RESPONSIVE ===== */
 @media (max-width:768px) {
   .sidebar { display:none; }
@@ -462,6 +482,10 @@ body::after {
       </div>
       <div class="auth-err" id="login-err"></div>
       <button class="btn-primary" onclick="doLogin()">เข้าสู่ระบบ</button>
+      <div class="divider">หรือ</div>
+      <button class="google-btn" onclick="enterGuestMode()" style="border-color:var(--green3,#00ff8840);color:#00cc6a;margin-bottom:4px">
+        👁 ดูปฏิทินแบบ Guest (ไม่ต้อง Login)
+      </button>
       <div class="divider">หรือ</div>
       <button class="google-btn" onclick="googleSignIn()">
         <svg width="16" height="16" viewBox="0 0 18 18"><path fill="#EA4335" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#4285F4" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#34A853" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
@@ -514,6 +538,11 @@ body::after {
     </div>
   </div>
 
+  <!-- GUEST BANNER -->
+  <div class="guest-banner" id="guest-banner" style="display:none">
+    <span>👁 โหมด <b>Guest</b> — ดูได้อย่างเดียว ไม่สามารถแก้ไขกิจกรรมได้</span>
+    <button class="guest-login-btn" onclick="exitGuestMode()">เข้าสู่ระบบ</button>
+  </div>
   <!-- MAIN -->
   <div class="main">
     <!-- SIDEBAR -->
@@ -988,6 +1017,7 @@ async function loadGoogleEvents() {
 }
 
 async function saveEvent() {
+  if (checkGuestBlock('เพิ่ม/แก้ไขกิจกรรม')) return;
   const id = document.getElementById('event-id').value;
   const title = document.getElementById('ev-title').value.trim();
   if (!title) { toast('กรุณาระบุชื่อกิจกรรม', 'error'); return; }
@@ -1046,6 +1076,7 @@ async function saveEvent() {
 }
 
 async function deleteEvent() {
+  if (checkGuestBlock('ลบกิจกรรม')) return;
   const id = document.getElementById('event-id').value;
   if (!id) return;
   const ev = state.events.find(e => e.id === id);
@@ -1067,6 +1098,7 @@ async function deleteEvent() {
 
 // ===== QUICK ADD =====
 async function quickAdd() {
+  if (checkGuestBlock('เพิ่มกิจกรรม')) return;
   const title = document.getElementById('quick-title').value.trim();
   const date = document.getElementById('quick-date').value;
   const priority = document.getElementById('quick-priority').value;
@@ -1463,6 +1495,7 @@ function cellClick(dateStr) { if (!dateStr) return; state.curDate = new Date(dat
 
 // ===== EVENT MODAL =====
 function openEventModal(evId) {
+  if (!evId && checkGuestBlock('เพิ่มกิจกรรม')) return;
   const modal = document.getElementById('event-modal');
   const delBtn = document.getElementById('ev-delete-btn');
   document.getElementById('event-modal-title').textContent = evId ? 'แก้ไขกิจกรรม' : 'เพิ่มกิจกรรม';
@@ -1658,15 +1691,61 @@ function toast(msg, type='info') {
   setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 3000);
 }
 
+// ===== GUEST MODE =====
+function enterGuestMode() {
+  // guest user object — no write permissions
+  state.currentUser = {
+    id: 'guest', username: 'guest', name: 'Guest', role: 'guest', lineToken: ''
+  };
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').classList.add('show');
+  document.getElementById('guest-banner').style.display = 'flex';
+  document.getElementById('app').classList.add('guest-mode');
+  document.getElementById('top-username').textContent = 'Guest';
+  const badge = document.getElementById('top-badge');
+  badge.textContent = 'GUEST';
+  badge.style.cssText = 'background:#ffffff11;border:1px solid #ffffff22;color:#aaaaaa;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600';
+  // hide admin button, settings bell
+  document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+  // load events read-only
+  loadEvents();
+  initGapi();
+  toast('เข้าสู่โหมด Guest — ดูได้อย่างเดียว', 'info');
+}
+
+function exitGuestMode() {
+  state.currentUser = null;
+  document.getElementById('app').classList.remove('show', 'guest-mode');
+  document.getElementById('guest-banner').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  if (state.syncTimer) { clearInterval(state.syncTimer); state.syncTimer = null; }
+}
+
+// Block editing in guest mode
+function checkGuestBlock(action) {
+  if (state.currentUser && state.currentUser.role === 'guest') {
+    toast('โหมด Guest ไม่สามารถ' + action + 'ได้ กรุณาเข้าสู่ระบบก่อน', 'error');
+    return true;
+  }
+  return false;
+}
+
 // ===== INIT =====
 initAdmin();
 const session = localStorage.getItem('cal_session');
 if (session) {
   try {
     const user = JSON.parse(session);
-    const fresh = getUsers().find(u => u.id === user.id);
-    if (fresh) loginSuccess(fresh);
+    if (user.role !== 'guest') {
+      const fresh = getUsers().find(u => u.id === user.id);
+      if (fresh) loginSuccess(fresh);
+    }
   } catch(e) {}
+}
+
+// Check URL param ?guest=1 for direct guest link
+if (new URLSearchParams(location.search).get('guest') === '1') {
+  setTimeout(enterGuestMode, 300);
 }
 </script>
 </body>
