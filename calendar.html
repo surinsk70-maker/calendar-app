@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบปฏิทิน — Anime Glow</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ===== ROOT VARIABLES ===== */
+:root {
+  --bg:        #070d07;
+  --bg2:       #0c160c;
+  --bg3:       #111e11;
+  --bg4:       #162216;
+  --card:      #0e1a0e;
+  --green:     #00ff88;
+  --green2:    #00cc6a;
+  --green3:    #00ff4488;
+  --green-dim: #00ff8822;
+  --green-mid: #00ff8844;
+  --teal:      #00ffcc;
+  --cyan:      #00e5ff;
+  --red:       #ff4466;
+  --yellow:    #ffcc00;
+  --text:      #d4ffe4;
+  --text2:     #88ccaa;
+  --text3:     #446655;
+  --border:    #00ff8820;
+  --border2:   #00ff8840;
+  --shadow:    0 0 20px #00ff8830, 0 0 40px #00ff8815;
+  --shadow2:   0 0 8px #00ff8850;
+  --radius:    10px;
+  --font:      'Sarabun', 'Noto Sans Thai', sans-serif;
+  --HIGH:      #ff4466;
+  --MEDIUM:    #ffaa00;
+  --LOW:       #00ff88;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--green3); border-radius: 3px; }
+
+/* ===== ANIMATIONS ===== */
+@keyframes glow-pulse { 0%,100%{text-shadow:0 0 10px var(--green),0 0 20px var(--green3)} 50%{text-shadow:0 0 20px var(--green),0 0 40px var(--green3),0 0 60px var(--green-mid)} }
+@keyframes border-glow { 0%,100%{box-shadow:0 0 5px var(--green3),inset 0 0 5px var(--green-dim)} 50%{box-shadow:0 0 15px var(--green3),0 0 30px var(--green-dim),inset 0 0 10px var(--green-dim)} }
+@keyframes fade-in { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slide-in { from{opacity:0;transform:translateX(-20px)} to{opacity:1;transform:translateX(0)} }
+@keyframes spin { to{transform:rotate(360deg)} }
+@keyframes scanline { 0%{transform:translateY(-100%)} 100%{transform:translateY(100vh)} }
+@keyframes flicker { 0%,98%,100%{opacity:1} 99%{opacity:.85} }
+
+/* ===== SCANLINE EFFECT ===== */
+body::before {
+  content:''; position:fixed; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(transparent,var(--green-dim),transparent);
+  animation:scanline 8s linear infinite; pointer-events:none; z-index:9999;
+}
+
+/* ===== GRID BG ===== */
+body::after {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:
+    linear-gradient(var(--border) 1px,transparent 1px),
+    linear-gradient(90deg,var(--border) 1px,transparent 1px);
+  background-size:40px 40px;
+  opacity:.4;
+}
+
+/* ===== AUTH SCREEN ===== */
+#auth-screen {
+  position:fixed; inset:0; z-index:1000; display:flex;
+  align-items:center; justify-content:center;
+  background:radial-gradient(ellipse at center,#0d1f0d 0%,var(--bg) 70%);
+  animation:flicker 10s infinite;
+}
+.auth-box {
+  background:var(--card); border:1px solid var(--border2);
+  border-radius:16px; padding:40px 48px; width:100%; max-width:420px;
+  box-shadow:var(--shadow); position:relative; z-index:1;
+  animation:fade-in .4s ease;
+}
+.auth-logo {
+  text-align:center; margin-bottom:32px;
+}
+.auth-logo .logo-text {
+  font-size:28px; font-weight:700; letter-spacing:2px;
+  color:var(--green); animation:glow-pulse 3s ease-in-out infinite;
+}
+.auth-logo .logo-sub { font-size:12px; color:var(--text3); letter-spacing:4px; margin-top:4px; }
+.auth-tabs { display:flex; gap:4px; margin-bottom:24px; background:var(--bg2); border-radius:8px; padding:4px; }
+.auth-tab {
+  flex:1; padding:8px; text-align:center; font-size:13px; cursor:pointer;
+  border-radius:6px; color:var(--text2); transition:all .2s;
+}
+.auth-tab.active { background:var(--green); color:var(--bg); font-weight:600; }
+.form-group { margin-bottom:16px; }
+.form-label { font-size:12px; color:var(--text2); margin-bottom:6px; display:block; letter-spacing:1px; }
+.form-input {
+  width:100%; padding:10px 14px; background:var(--bg2); border:1px solid var(--border2);
+  border-radius:var(--radius); color:var(--text); font-family:var(--font); font-size:14px;
+  outline:none; transition:all .2s;
+}
+.form-input:focus { border-color:var(--green); box-shadow:0 0 0 2px var(--green-dim); }
+.btn-primary {
+  width:100%; padding:12px; background:linear-gradient(135deg,var(--green),var(--green2));
+  border:none; border-radius:var(--radius); color:var(--bg); font-family:var(--font);
+  font-size:14px; font-weight:700; cursor:pointer; letter-spacing:1px;
+  transition:all .2s; margin-top:8px;
+}
+.btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 20px var(--green3); }
+.btn-primary:active { transform:translateY(0); }
+.auth-err { color:var(--red); font-size:12px; margin-top:8px; text-align:center; min-height:18px; }
+.google-btn {
+  width:100%; padding:10px; background:var(--bg2); border:1px solid var(--border2);
+  border-radius:var(--radius); color:var(--text); font-family:var(--font); font-size:13px;
+  cursor:pointer; margin-top:12px; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.google-btn:hover { border-color:var(--green); background:var(--bg3); }
+.divider { text-align:center; color:var(--text3); font-size:11px; margin:12px 0; position:relative; }
+.divider::before,.divider::after { content:''; position:absolute; top:50%; width:40%; height:1px; background:var(--border); }
+.divider::before { left:0; } .divider::after { right:0; }
+
+/* ===== APP LAYOUT ===== */
+#app { display:none; height:100vh; flex-direction:column; position:relative; z-index:1; }
+#app.show { display:flex; }
+.topbar {
+  height:56px; background:var(--card); border-bottom:1px solid var(--border2);
+  display:flex; align-items:center; padding:0 20px; gap:12px; flex-shrink:0;
+  box-shadow:0 2px 20px #00000040;
+}
+.topbar-logo { font-size:16px; font-weight:700; color:var(--green); letter-spacing:2px; animation:glow-pulse 3s ease-in-out infinite; }
+.topbar-nav { display:flex; gap:4px; margin-left:auto; }
+.nav-btn {
+  padding:6px 14px; border-radius:6px; font-size:12px; cursor:pointer;
+  background:transparent; border:1px solid transparent; color:var(--text2);
+  font-family:var(--font); transition:all .2s; letter-spacing:.5px;
+}
+.nav-btn:hover { border-color:var(--border2); color:var(--green); }
+.nav-btn.active { background:var(--green-dim); border-color:var(--green3); color:var(--green); }
+.topbar-user { display:flex; align-items:center; gap:8px; margin-left:8px; }
+.user-badge {
+  padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;
+  background:var(--green-dim); border:1px solid var(--green3); color:var(--green);
+}
+.user-badge.admin { background:#ff446622; border-color:#ff446644; color:var(--red); }
+.topbar-actions { display:flex; gap:8px; }
+.icon-btn {
+  width:32px; height:32px; border-radius:6px; background:transparent;
+  border:1px solid var(--border); cursor:pointer; color:var(--text2);
+  font-size:16px; display:flex; align-items:center; justify-content:center; transition:all .2s;
+}
+.icon-btn:hover { border-color:var(--green3); color:var(--green); background:var(--green-dim); }
+
+/* ===== MAIN CONTENT ===== */
+.main { flex:1; overflow:hidden; display:flex; }
+.sidebar {
+  width:260px; background:var(--card); border-right:1px solid var(--border);
+  padding:20px 16px; display:flex; flex-direction:column; gap:8px; overflow-y:auto; flex-shrink:0;
+}
+.sidebar-section { margin-bottom:8px; }
+.sidebar-title { font-size:10px; color:var(--text3); letter-spacing:2px; padding:0 8px; margin-bottom:8px; }
+.mini-cal { background:var(--bg2); border-radius:var(--radius); padding:14px; border:1px solid var(--border); }
+.mini-cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.mini-cal-title { font-size:13px; font-weight:600; color:var(--green); }
+.mini-nav { background:none; border:none; color:var(--text2); cursor:pointer; font-size:14px; padding:2px 6px; transition:color .2s; }
+.mini-nav:hover { color:var(--green); }
+.mini-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.mini-day-label { font-size:9px; color:var(--text3); text-align:center; padding:2px; }
+.mini-day {
+  font-size:11px; text-align:center; padding:3px 2px; border-radius:4px;
+  cursor:pointer; color:var(--text2); transition:all .15s;
+}
+.mini-day:hover { background:var(--green-dim); color:var(--green); }
+.mini-day.today { background:var(--green); color:var(--bg); font-weight:700; border-radius:50%; }
+.mini-day.selected { background:var(--green-dim); color:var(--green); border:1px solid var(--green3); }
+.mini-day.has-event::after { content:''; display:block; width:4px; height:4px; background:var(--green); border-radius:50%; margin:0 auto; margin-top:1px; }
+.mini-day.other-month { color:var(--text3); }
+
+.sidebar-quick-add {
+  background:var(--bg2); border-radius:var(--radius); padding:14px; border:1px solid var(--border);
+}
+.quick-input {
+  width:100%; padding:8px 12px; background:var(--bg); border:1px solid var(--border2);
+  border-radius:6px; color:var(--text); font-family:var(--font); font-size:12px;
+  outline:none; margin-bottom:8px;
+}
+.quick-input:focus { border-color:var(--green); }
+.quick-add-btn {
+  width:100%; padding:8px; background:var(--green-dim); border:1px solid var(--green3);
+  border-radius:6px; color:var(--green); font-family:var(--font); font-size:12px;
+  cursor:pointer; transition:all .2s;
+}
+.quick-add-btn:hover { background:var(--green); color:var(--bg); font-weight:600; }
+
+.priority-legend { background:var(--bg2); border-radius:var(--radius); padding:12px; border:1px solid var(--border); }
+.legend-item { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text2); margin-bottom:6px; }
+.legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* ===== CONTENT AREA ===== */
+.content { flex:1; overflow:auto; padding:20px; }
+
+/* ===== CALENDAR VIEWS ===== */
+.view-header {
+  display:flex; align-items:center; gap:12px; margin-bottom:20px;
+}
+.view-title { font-size:20px; font-weight:700; color:var(--green); animation:glow-pulse 4s ease-in-out infinite; }
+.view-nav-btn {
+  padding:6px 16px; border-radius:6px; background:var(--bg2); border:1px solid var(--border2);
+  color:var(--text2); font-family:var(--font); font-size:13px; cursor:pointer; transition:all .2s;
+}
+.view-nav-btn:hover { border-color:var(--green3); color:var(--green); }
+.today-btn {
+  padding:6px 14px; background:var(--green-dim); border:1px solid var(--green3);
+  border-radius:6px; color:var(--green); font-family:var(--font); font-size:12px; cursor:pointer;
+}
+.add-event-btn {
+  margin-left:auto; padding:8px 18px; background:linear-gradient(135deg,var(--green),var(--green2));
+  border:none; border-radius:var(--radius); color:var(--bg); font-family:var(--font);
+  font-size:13px; font-weight:700; cursor:pointer; transition:all .2s;
+}
+.add-event-btn:hover { transform:translateY(-1px); box-shadow:0 4px 16px var(--green3); }
+
+/* ===== MONTH VIEW ===== */
+.month-grid { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; animation:border-glow 4s ease-in-out infinite; }
+.month-header { display:grid; grid-template-columns:repeat(7,1fr); background:var(--bg2); border-bottom:1px solid var(--border); }
+.month-header-cell { padding:10px; text-align:center; font-size:11px; color:var(--green); letter-spacing:1px; font-weight:600; }
+.month-body { display:grid; grid-template-columns:repeat(7,1fr); }
+.month-cell {
+  min-height:100px; padding:8px; border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border); transition:background .2s; cursor:pointer; position:relative;
+}
+.month-cell:hover { background:var(--green-dim); }
+.month-cell.today { background:#00ff880d; }
+.month-cell.today .day-num { color:var(--green); font-weight:700; background:var(--green); color:var(--bg); width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+.month-cell.other-month { opacity:.4; }
+.day-num { font-size:12px; color:var(--text2); margin-bottom:4px; width:24px; height:24px; display:flex; align-items:center; justify-content:center; }
+.month-event {
+  font-size:10px; padding:2px 6px; border-radius:3px; margin-bottom:2px;
+  cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  transition:all .15s;
+}
+.month-event:hover { filter:brightness(1.3); transform:translateX(2px); }
+.more-events { font-size:10px; color:var(--text3); cursor:pointer; }
+.more-events:hover { color:var(--green); }
+
+/* ===== WEEK VIEW ===== */
+.week-grid { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; }
+.week-header { display:grid; grid-template-columns:60px repeat(7,1fr); background:var(--bg2); border-bottom:1px solid var(--border); }
+.week-header-cell { padding:10px 4px; text-align:center; font-size:11px; color:var(--text2); }
+.week-header-cell .wday { font-weight:600; color:var(--green); }
+.week-header-cell .wdate { font-size:16px; font-weight:700; }
+.week-header-cell.today .wdate { color:var(--green); text-shadow:0 0 10px var(--green); }
+.week-body { display:grid; grid-template-columns:60px repeat(7,1fr); max-height:600px; overflow-y:auto; }
+.time-col { }
+.time-slot { height:48px; border-bottom:1px solid var(--border); padding:0 8px; font-size:10px; color:var(--text3); display:flex; align-items:flex-start; padding-top:4px; }
+.week-col { border-left:1px solid var(--border); position:relative; }
+.week-col.today-col { background:#00ff880a; }
+.week-hour { height:48px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .15s; }
+.week-hour:hover { background:var(--green-dim); }
+.week-event {
+  position:absolute; left:2px; right:2px; border-radius:4px; padding:3px 6px;
+  font-size:10px; cursor:pointer; overflow:hidden; transition:all .15s; z-index:1;
+}
+.week-event:hover { filter:brightness(1.3); z-index:2; }
+
+/* ===== DAY VIEW ===== */
+.day-grid { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; }
+.day-header { padding:16px 20px; background:var(--bg2); border-bottom:1px solid var(--border); }
+.day-header-title { font-size:18px; font-weight:700; color:var(--green); }
+.day-body { display:grid; grid-template-columns:60px 1fr; max-height:600px; overflow-y:auto; }
+.day-hour { height:56px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .15s; position:relative; }
+.day-hour:hover { background:var(--green-dim); }
+.day-event {
+  position:absolute; left:4px; right:4px; border-radius:4px; padding:4px 8px;
+  font-size:11px; cursor:pointer; overflow:hidden; z-index:1;
+}
+
+/* ===== YEAR VIEW ===== */
+.year-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.year-month-card {
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px; cursor:pointer; transition:all .2s;
+}
+.year-month-card:hover { border-color:var(--green3); box-shadow:var(--shadow2); transform:translateY(-2px); }
+.year-month-title { font-size:12px; font-weight:600; color:var(--green); margin-bottom:8px; }
+.year-mini-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:1px; }
+.year-mini-day { font-size:8px; text-align:center; padding:2px 1px; border-radius:2px; color:var(--text3); }
+.year-mini-day.has-high { background:#ff446633; color:var(--red); }
+.year-mini-day.has-medium { background:#ffaa0033; color:var(--yellow); }
+.year-mini-day.has-low { background:#00ff8833; color:var(--green2); }
+.year-mini-day.today { color:var(--green); font-weight:700; }
+.year-event-count { font-size:11px; color:var(--text3); margin-top:8px; }
+
+/* ===== SUMMARY VIEW ===== */
+.summary-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+.summary-card {
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px; text-align:center;
+}
+.summary-card-num { font-size:32px; font-weight:700; color:var(--green); animation:glow-pulse 3s ease-in-out infinite; }
+.summary-card-label { font-size:11px; color:var(--text3); letter-spacing:1px; margin-top:4px; }
+.summary-event-list { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.summary-event-row {
+  display:flex; align-items:center; gap:12px; padding:12px 16px;
+  border-bottom:1px solid var(--border); transition:background .15s;
+}
+.summary-event-row:last-child { border-bottom:none; }
+.summary-event-row:hover { background:var(--green-dim); cursor:pointer; }
+.priority-badge {
+  padding:2px 8px; border-radius:10px; font-size:10px; font-weight:600;
+  white-space:nowrap; flex-shrink:0;
+}
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position:fixed; inset:0; background:#00000088; z-index:2000;
+  display:flex; align-items:center; justify-content:center; padding:20px;
+  animation:fade-in .2s ease;
+}
+.modal {
+  background:var(--card); border:1px solid var(--border2); border-radius:16px;
+  width:100%; max-width:520px; max-height:90vh; overflow-y:auto;
+  box-shadow:var(--shadow); animation:fade-in .2s ease;
+}
+.modal-header {
+  padding:20px 24px 0; display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:20px;
+}
+.modal-title { font-size:16px; font-weight:700; color:var(--green); }
+.modal-close { background:none; border:none; color:var(--text3); cursor:pointer; font-size:20px; transition:color .2s; }
+.modal-close:hover { color:var(--red); }
+.modal-body { padding:0 24px 24px; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.form-select {
+  width:100%; padding:10px 14px; background:var(--bg2); border:1px solid var(--border2);
+  border-radius:var(--radius); color:var(--text); font-family:var(--font); font-size:13px;
+  outline:none; appearance:none; cursor:pointer;
+}
+.form-select:focus { border-color:var(--green); }
+.form-textarea {
+  width:100%; padding:10px 14px; background:var(--bg2); border:1px solid var(--border2);
+  border-radius:var(--radius); color:var(--text); font-family:var(--font); font-size:13px;
+  outline:none; resize:vertical; min-height:80px;
+}
+.form-textarea:focus { border-color:var(--green); }
+.modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+.btn-secondary {
+  padding:9px 20px; background:transparent; border:1px solid var(--border2);
+  border-radius:var(--radius); color:var(--text2); font-family:var(--font); font-size:13px;
+  cursor:pointer; transition:all .2s;
+}
+.btn-secondary:hover { border-color:var(--text2); color:var(--text); }
+.btn-danger {
+  padding:9px 20px; background:#ff446622; border:1px solid #ff446644;
+  border-radius:var(--radius); color:var(--red); font-family:var(--font); font-size:13px;
+  cursor:pointer; transition:all .2s;
+}
+.btn-danger:hover { background:#ff446633; }
+.btn-save {
+  padding:9px 24px; background:linear-gradient(135deg,var(--green),var(--green2));
+  border:none; border-radius:var(--radius); color:var(--bg); font-family:var(--font);
+  font-size:13px; font-weight:700; cursor:pointer; transition:all .2s;
+}
+.btn-save:hover { transform:translateY(-1px); box-shadow:0 4px 16px var(--green3); }
+
+/* ===== EVENT DETAIL POPUP ===== */
+.event-popup {
+  position:fixed; z-index:3000; background:var(--card); border:1px solid var(--border2);
+  border-radius:12px; padding:16px; width:280px; box-shadow:var(--shadow);
+  animation:fade-in .15s ease;
+}
+.event-popup-title { font-size:14px; font-weight:600; color:var(--text); margin-bottom:8px; }
+.event-popup-row { display:flex; gap:6px; align-items:center; font-size:12px; color:var(--text2); margin-bottom:4px; }
+.event-popup-actions { display:flex; gap:6px; margin-top:12px; }
+.popup-btn { flex:1; padding:6px; border-radius:6px; font-size:11px; cursor:pointer; font-family:var(--font); border:1px solid; transition:all .2s; }
+
+/* ===== ADMIN PANEL ===== */
+.admin-table { width:100%; border-collapse:collapse; background:var(--card); border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); }
+.admin-table th { background:var(--bg2); padding:12px 16px; text-align:left; font-size:11px; color:var(--green); letter-spacing:1px; border-bottom:1px solid var(--border); }
+.admin-table td { padding:12px 16px; font-size:13px; color:var(--text2); border-bottom:1px solid var(--border); }
+.admin-table tr:last-child td { border-bottom:none; }
+.admin-table tr:hover td { background:var(--green-dim); }
+.role-badge { padding:2px 8px; border-radius:10px; font-size:10px; font-weight:600; }
+.role-badge.admin { background:#ff446622; color:var(--red); border:1px solid #ff446644; }
+.role-badge.user { background:var(--green-dim); color:var(--green); border:1px solid var(--green3); }
+.action-btn { padding:4px 10px; border-radius:4px; font-size:11px; cursor:pointer; font-family:var(--font); border:1px solid; transition:all .2s; }
+
+/* ===== LINE NOTIFY SETTINGS ===== */
+.line-settings { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+.line-status { display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+.status-dot { width:8px; height:8px; border-radius:50%; }
+.status-dot.connected { background:var(--green); box-shadow:0 0 8px var(--green); }
+.status-dot.disconnected { background:var(--text3); }
+.notify-item { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); }
+.notify-item:last-child { border-bottom:none; }
+.toggle-switch { position:relative; width:40px; height:22px; }
+.toggle-switch input { opacity:0; width:0; height:0; }
+.slider {
+  position:absolute; cursor:pointer; inset:0; background:var(--bg2); border:1px solid var(--border2);
+  border-radius:11px; transition:.3s;
+}
+.slider::before { content:''; position:absolute; height:16px; width:16px; left:2px; bottom:2px; background:var(--text3); border-radius:50%; transition:.3s; }
+.toggle-switch input:checked + .slider { background:var(--green-dim); border-color:var(--green3); }
+.toggle-switch input:checked + .slider::before { transform:translateX(18px); background:var(--green); }
+
+/* ===== TOAST ===== */
+.toast-container { position:fixed; top:70px; right:20px; z-index:9000; display:flex; flex-direction:column; gap:8px; }
+.toast {
+  padding:12px 20px; border-radius:var(--radius); font-size:13px; min-width:250px;
+  animation:slide-in .3s ease; box-shadow:var(--shadow);
+}
+.toast.success { background:#00ff8822; border:1px solid #00ff8844; color:var(--green); }
+.toast.error { background:#ff446622; border:1px solid #ff446644; color:var(--red); }
+.toast.info { background:#0088ff22; border:1px solid #0088ff44; color:var(--cyan); }
+
+/* ===== LOADER ===== */
+.loader { display:inline-block; width:18px; height:18px; border:2px solid var(--border2); border-top-color:var(--green); border-radius:50%; animation:spin .8s linear infinite; }
+
+/* ===== EMPTY STATE ===== */
+.empty-state { text-align:center; padding:60px 20px; color:var(--text3); }
+.empty-state-icon { font-size:48px; margin-bottom:12px; opacity:.5; }
+.empty-state-text { font-size:14px; }
+
+/* ===== SECTION TITLE ===== */
+.section-title { font-size:14px; font-weight:600; color:var(--green); margin-bottom:12px; letter-spacing:1px; display:flex; align-items:center; gap:8px; }
+.section-title::after { content:''; flex:1; height:1px; background:linear-gradient(to right,var(--border2),transparent); }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width:768px) {
+  .sidebar { display:none; }
+  .summary-cards { grid-template-columns:repeat(2,1fr); }
+  .year-grid { grid-template-columns:repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== AUTH SCREEN ===== -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="logo-text">◈ CALENDAR SYS</div>
+      <div class="logo-sub">ANIME GLOW EDITION</div>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchTab('login')">เข้าสู่ระบบ</div>
+      <div class="auth-tab" onclick="switchTab('register')">สมัครสมาชิก</div>
+    </div>
+    <!-- LOGIN -->
+    <div id="tab-login">
+      <div class="form-group">
+        <label class="form-label">ชื่อผู้ใช้</label>
+        <input class="form-input" id="login-user" placeholder="username" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">รหัสผ่าน</label>
+        <input class="form-input" type="password" id="login-pass" placeholder="password" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="auth-err" id="login-err"></div>
+      <button class="btn-primary" onclick="doLogin()">เข้าสู่ระบบ</button>
+      <div class="divider">หรือ</div>
+      <button class="google-btn" onclick="googleSignIn()">
+        <svg width="16" height="16" viewBox="0 0 18 18"><path fill="#EA4335" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#4285F4" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#34A853" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+        เข้าสู่ระบบด้วย Google
+      </button>
+    </div>
+    <!-- REGISTER -->
+    <div id="tab-register" style="display:none">
+      <div class="form-group">
+        <label class="form-label">ชื่อแสดง</label>
+        <input class="form-input" id="reg-name" placeholder="ชื่อ-นามสกุล">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ชื่อผู้ใช้</label>
+        <input class="form-input" id="reg-user" placeholder="username (ภาษาอังกฤษ)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">รหัสผ่าน</label>
+        <input class="form-input" type="password" id="reg-pass" placeholder="รหัสผ่าน (อย่างน้อย 6 ตัว)">
+      </div>
+      <div class="auth-err" id="reg-err"></div>
+      <button class="btn-primary" onclick="doRegister()">สมัครสมาชิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div class="toast-container" id="toasts"></div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="app">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <span class="topbar-logo">◈ CALENDAR</span>
+    <div class="topbar-nav">
+      <button class="nav-btn active" onclick="setView('month')" data-view="month">รายเดือน</button>
+      <button class="nav-btn" onclick="setView('week')" data-view="week">รายสัปดาห์</button>
+      <button class="nav-btn" onclick="setView('day')" data-view="day">รายวัน</button>
+      <button class="nav-btn" onclick="setView('year')" data-view="year">รายปี</button>
+      <button class="nav-btn" onclick="setView('summary')" data-view="summary">สรุป</button>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" onclick="openSettings()" title="การแจ้งเตือน LINE">🔔</button>
+      <button class="icon-btn admin-only" onclick="setView('admin')" title="จัดการ Users" style="display:none">👥</button>
+    </div>
+    <div class="topbar-user">
+      <span id="top-username" style="font-size:12px;color:var(--text2)"></span>
+      <span id="top-badge" class="user-badge"></span>
+      <button class="icon-btn" onclick="doLogout()" title="ออกจากระบบ" style="font-size:12px">↩</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="mini-cal" id="mini-calendar"></div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">เพิ่มกิจกรรมด่วน</div>
+        <div class="sidebar-quick-add">
+          <input class="quick-input" id="quick-title" placeholder="ชื่อกิจกรรม...">
+          <input class="quick-input" id="quick-date" type="date">
+          <select class="quick-input" id="quick-priority" style="cursor:pointer">
+            <option value="HIGH">🔴 สำคัญมาก</option>
+            <option value="MEDIUM" selected>🟡 สำคัญปานกลาง</option>
+            <option value="LOW">🟢 สำคัญน้อย</option>
+          </select>
+          <button class="quick-add-btn" onclick="quickAdd()">+ เพิ่มทันที</button>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">ลำดับความสำคัญ</div>
+        <div class="priority-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>สำคัญมาก (HIGH)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>สำคัญปานกลาง (MEDIUM)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>สำคัญน้อย (LOW)</div>
+        </div>
+      </div>
+      <div class="sidebar-section" id="gcal-status-box">
+        <div class="sidebar-title">Google Calendar</div>
+        <div style="background:var(--bg2);border-radius:var(--radius);padding:12px;border:1px solid var(--border);font-size:12px;">
+          <div id="gcal-status" style="color:var(--text3)">กำลังเตรียมระบบ...</div>
+          <div id="gcal-last-sync" style="font-size:10px;color:var(--text3);margin-top:4px;display:none"></div>
+          <button id="gcal-signin-btn" onclick="handleAuthClick()" style="display:none;margin-top:8px" class="quick-add-btn">เชื่อมต่อ Google</button>
+          <button id="gcal-sync-btn" onclick="loadGoogleEvents()" style="display:none;margin-top:6px;width:100%;padding:6px;background:transparent;border:1px solid var(--green3);border-radius:6px;color:var(--green);font-family:var(--font);font-size:11px;cursor:pointer;">↻ Sync ตอนนี้</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content" id="main-content">
+      <div class="empty-state"><div class="loader"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EVENT MODAL ===== -->
+<div class="modal-overlay" id="event-modal" style="display:none" onclick="if(event.target===this)closeEventModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="event-modal-title">เพิ่มกิจกรรม</span>
+      <button class="modal-close" onclick="closeEventModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="event-id">
+      <div class="form-group">
+        <label class="form-label">ชื่อกิจกรรม *</label>
+        <input class="form-input" id="ev-title" placeholder="ระบุชื่อกิจกรรม">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">วันที่เริ่ม *</label>
+          <input class="form-input" type="date" id="ev-start-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">เวลาเริ่ม</label>
+          <input class="form-input" type="time" id="ev-start-time">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">วันที่สิ้นสุด</label>
+          <input class="form-input" type="date" id="ev-end-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">เวลาสิ้นสุด</label>
+          <input class="form-input" type="time" id="ev-end-time">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">ลำดับความสำคัญ</label>
+          <select class="form-select" id="ev-priority">
+            <option value="HIGH">🔴 สำคัญมาก</option>
+            <option value="MEDIUM" selected>🟡 สำคัญปานกลาง</option>
+            <option value="LOW">🟢 สำคัญน้อย</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">แจ้งเตือนก่อน (นาที)</label>
+          <select class="form-select" id="ev-remind">
+            <option value="0">ไม่แจ้งเตือน</option>
+            <option value="10">10 นาที</option>
+            <option value="30" selected>30 นาที</option>
+            <option value="60">1 ชั่วโมง</option>
+            <option value="1440">1 วัน</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">สถานที่</label>
+        <input class="form-input" id="ev-location" placeholder="ระบุสถานที่ (ถ้ามี)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">รายละเอียด</label>
+        <textarea class="form-textarea" id="ev-desc" placeholder="รายละเอียดเพิ่มเติม..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-danger" id="ev-delete-btn" onclick="deleteEvent()" style="display:none">ลบกิจกรรม</button>
+        <button class="btn-secondary" onclick="closeEventModal()">ยกเลิก</button>
+        <button class="btn-save" onclick="saveEvent()">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LINE SETTINGS MODAL ===== -->
+<div class="modal-overlay" id="line-modal" style="display:none" onclick="if(event.target===this)closeLineModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🔔 การแจ้งเตือน LINE</span>
+      <button class="modal-close" onclick="closeLineModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="line-settings">
+        <div class="line-status">
+          <div class="status-dot" id="line-dot"></div>
+          <span id="line-status-text" style="font-size:13px;color:var(--text2)"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">LINE Notify Token</label>
+          <input class="form-input" id="line-token" placeholder="วาง token จาก notify.line.me">
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;">
+            ขอ token ได้ที่ <a href="https://notify-bot.line.me/my/" target="_blank" style="color:var(--cyan)">notify-bot.line.me/my/</a>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="saveLineToken()">บันทึก Token</button>
+        <div style="margin-top:16px">
+          <div class="section-title">ตั้งค่าการแจ้งเตือน</div>
+          <div class="notify-item">
+            <span style="font-size:13px">แจ้งเตือนกิจกรรมสำคัญมาก</span>
+            <label class="toggle-switch"><input type="checkbox" id="notify-high" checked><span class="slider"></span></label>
+          </div>
+          <div class="notify-item">
+            <span style="font-size:13px">แจ้งเตือนกิจกรรมสำคัญปานกลาง</span>
+            <label class="toggle-switch"><input type="checkbox" id="notify-medium" checked><span class="slider"></span></label>
+          </div>
+          <div class="notify-item">
+            <span style="font-size:13px">แจ้งเตือนกิจกรรมสำคัญน้อย</span>
+            <label class="toggle-switch"><input type="checkbox" id="notify-low"><span class="slider"></span></label>
+          </div>
+          <div class="notify-item">
+            <span style="font-size:13px">สรุปกิจกรรมประจำวัน (08:00 น.)</span>
+            <label class="toggle-switch"><input type="checkbox" id="notify-daily"><span class="slider"></span></label>
+          </div>
+        </div>
+        <div style="margin-top:16px">
+          <button class="google-btn" onclick="testLineNotify()">ทดสอบการแจ้งเตือน</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GOOGLE GAPI ===== -->
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
+
+<script>
+// ===== CONFIG =====
+const CONFIG = {
+  API_KEY: 'AIzaSyAwdN12GLztbhMc8nh_xcLSesVDdYyxVA0',
+  CLIENT_ID: '809121826246-aiijqvk4jed5rr7jikacpblvik4akqub.apps.googleusercontent.com',
+  CALENDAR_ID: 'surinsk70@gmail.com',
+  DISCOVERY_DOC: 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
+  SCOPES: 'https://www.googleapis.com/auth/calendar'
+};
+
+// ===== STATE =====
+let state = {
+  currentUser: null,
+  view: 'month',
+  curDate: new Date(),
+  events: [],
+  gapiReady: false,
+  tokenClient: null,
+  selectedDate: null
+};
+
+// ===== USER MANAGEMENT =====
+function getUsers() {
+  return JSON.parse(localStorage.getItem('cal_users') || '[]');
+}
+function saveUsers(u) { localStorage.setItem('cal_users', JSON.stringify(u)); }
+function initAdmin() {
+  let users = getUsers();
+  if (!users.find(u => u.username === 'admin')) {
+    users.push({ id: 'admin', username: 'admin', password: 'admin1234', name: 'ผู้ดูแลระบบ', role: 'admin', lineToken: '' });
+    saveUsers(users);
+  }
+}
+
+function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-err');
+  if (!u || !p) { err.textContent = 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน'; return; }
+  const users = getUsers();
+  const user = users.find(x => x.username === u && x.password === p);
+  if (!user) { err.textContent = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'; return; }
+  loginSuccess(user);
+}
+
+function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const u = document.getElementById('reg-user').value.trim();
+  const p = document.getElementById('reg-pass').value;
+  const err = document.getElementById('reg-err');
+  if (!name || !u || !p) { err.textContent = 'กรุณากรอกข้อมูลให้ครบ'; return; }
+  if (p.length < 6) { err.textContent = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'; return; }
+  const users = getUsers();
+  if (users.find(x => x.username === u)) { err.textContent = 'ชื่อผู้ใช้นี้มีอยู่แล้ว'; return; }
+  const newUser = { id: 'u_'+Date.now(), username: u, password: p, name, role: 'user', lineToken: '' };
+  users.push(newUser);
+  saveUsers(users);
+  toast('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ', 'success');
+  switchTab('login');
+}
+
+function loginSuccess(user) {
+  state.currentUser = user;
+  localStorage.setItem('cal_session', JSON.stringify(user));
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').classList.add('show');
+  document.getElementById('top-username').textContent = user.name;
+  const badge = document.getElementById('top-badge');
+  badge.textContent = user.role === 'admin' ? 'ADMIN' : 'USER';
+  badge.className = 'user-badge' + (user.role === 'admin' ? ' admin' : '');
+  if (user.role === 'admin') {
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+  }
+  const d = document.getElementById('quick-date');
+  d.value = toDateStr(new Date());
+  initGapi();
+  renderMiniCal();
+  loadEvents();
+  startNotifyScheduler();
+  toast('ยินดีต้อนรับ ' + user.name, 'success');
+}
+
+function doLogout() {
+  state.currentUser = null;
+  localStorage.removeItem('cal_session');
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-err').textContent = '';
+}
+
+function switchTab(tab) {
+  document.getElementById('tab-login').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('tab-register').style.display = tab === 'register' ? 'block' : 'none';
+  document.querySelectorAll('.auth-tab').forEach((el, i) => el.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+}
+
+// ===== GOOGLE API =====
+function initGapi() {
+  if (location.protocol === 'file:') {
+    setGcalStatusHtml(
+      '<span style="color:var(--yellow);font-size:12px">⚠ ต้องรันผ่าน http://</span>' +
+      '<div style="font-size:10px;color:var(--text3);margin-top:4px;line-height:1.5">' +
+      'เปิดด้วย <b style="color:var(--green)">VS Code Live Server</b><br>' +
+      'หรือพิมพ์ใน terminal:<br>' +
+      '<code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:10px">npx http-server .</code>' +
+      '</div>'
+    );
+    document.getElementById('gcal-signin-btn').style.display = 'none';
+    return;
+  }
+  if (typeof gapi === 'undefined' || typeof google === 'undefined') {
+    setTimeout(initGapi, 800); return;
+  }
+  gapi.load('client', async () => {
+    try {
+      await gapi.client.init({
+        apiKey: CONFIG.API_KEY,
+        discoveryDocs: [CONFIG.DISCOVERY_DOC]
+      });
+      state.gapiReady = true;
+      state.tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CONFIG.CLIENT_ID,
+        scope: CONFIG.SCOPES,
+        callback: onGoogleToken
+      });
+      // ลอง restore token ที่บันทึกไว้
+      const saved = localStorage.getItem('gapi_token');
+      const savedAt = parseInt(localStorage.getItem('gapi_token_time') || '0');
+      const age = (Date.now() - savedAt) / 1000;
+      if (saved && age < 3500) {           // token มีอายุ 1 ชั่วโมง (3600s)
+        gapi.client.setToken({ access_token: saved });
+        setGcalStatus(true);
+        await loadGoogleEvents();
+      } else {
+        localStorage.removeItem('gapi_token');
+        setGcalStatus(false, true);
+      }
+    } catch(e) {
+      console.error('GAPI init error:', e);
+      setGcalStatus(false, true);
+    }
+  });
+}
+
+async function onGoogleToken(resp) {
+  if (resp.error) {
+    console.error('Token error:', resp.error);
+    toast('Google auth ล้มเหลว: ' + resp.error, 'error');
+    setGcalStatus(false, true);
+    return;
+  }
+  const token = gapi.client.getToken();
+  localStorage.setItem('gapi_token', token.access_token);
+  localStorage.setItem('gapi_token_time', String(Date.now()));
+  setGcalStatus(true);
+  toast('เชื่อมต่อ Google Calendar สำเร็จ!', 'success');
+  await loadGoogleEvents();
+  // auto refresh ก่อนหมดอายุ 5 นาที
+  setTimeout(() => {
+    if (state.gapiReady && state.tokenClient) {
+      state.tokenClient.requestAccessToken({ prompt: '' });
+    }
+  }, 3300000);
+}
+
+function setGcalStatus(connected, showBtn = false) {
+  const el = document.getElementById('gcal-status');
+  const btn = document.getElementById('gcal-signin-btn');
+  const syncBtn = document.getElementById('gcal-sync-btn');
+  const lastEl = document.getElementById('gcal-last-sync');
+  if (connected) {
+    const savedAt = parseInt(localStorage.getItem('gapi_token_time') || '0');
+    const exp = savedAt ? new Date(savedAt + 3600000).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '?';
+    el.innerHTML = '<span style="color:var(--green)">● เชื่อมต่อแล้ว</span>';
+    if (lastEl) {
+      const lastSync = localStorage.getItem('gcal_last_sync');
+      if (lastSync) {
+        const d = new Date(lastSync).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+        lastEl.textContent = 'Sync ล่าสุด: ' + d;
+        lastEl.style.display = 'block';
+      }
+    }
+    if (btn) btn.style.display = 'none';
+    if (syncBtn) syncBtn.style.display = 'block';
+  } else {
+    el.innerHTML = '<span style="color:var(--text3)">○ ยังไม่ได้เชื่อมต่อ</span>';
+    if (lastEl) lastEl.style.display = 'none';
+    if (btn) { btn.style.display = showBtn ? 'block' : 'none'; btn.textContent = 'เชื่อมต่อ Google'; }
+    if (syncBtn) syncBtn.style.display = 'none';
+  }
+}
+
+function setGcalStatusHtml(html) {
+  document.getElementById('gcal-status').innerHTML = html;
+}
+
+function handleAuthClick() {
+  if (location.protocol === 'file:') { toast('ต้องรันผ่าน http:// ไม่ใช่ file://', 'error'); return; }
+  if (!state.tokenClient) { toast('Google API ยังโหลดไม่เสร็จ รอสักครู่', 'info'); return; }
+  state.tokenClient.requestAccessToken({ prompt: '' });
+}
+
+function googleSignIn() {
+  if (location.protocol === 'file:') {
+    toast('Google Login ต้องรันผ่าน http://localhost ครับ ใช้ Live Server', 'error'); return;
+  }
+  if (!state.gapiReady) { toast('Google API กำลังโหลด...', 'info'); return; }
+  if (state.tokenClient) {
+    state.tokenClient.requestAccessToken({ prompt: 'consent' });
+  } else {
+    toast('ไม่สามารถเชื่อมต่อ Google ได้ ตรวจสอบ Console', 'error');
+  }
+}
+
+async function syncGoogleCalendar() {
+  if (!state.gapiReady) { toast('Google API ยังไม่พร้อม', 'error'); return; }
+  const token = gapi.client.getToken();
+  if (!token) { handleAuthClick(); return; }
+  await loadGoogleEvents();
+}
+
+// ===== EVENTS =====
+function getLocalEvents() {
+  return JSON.parse(localStorage.getItem('cal_events') || '[]');
+}
+function saveLocalEvents(evs) { localStorage.setItem('cal_events', JSON.stringify(evs)); }
+
+function loadEvents() {
+  state.events = getLocalEvents();
+  renderCurrentView();
+}
+
+async function loadGoogleEvents() {
+  if (!state.gapiReady) { console.warn('GAPI not ready'); return; }
+  if (!gapi.client.getToken()) { setGcalStatus(false, true); return; }
+  setGcalStatusHtml('<span style="color:var(--cyan)">↻ กำลัง Sync...</span>');
+  try {
+    const now = new Date();
+    const timeMin = new Date(now.getFullYear() - 1, 0, 1).toISOString();
+    const timeMax = new Date(now.getFullYear() + 2, 11, 31).toISOString();
+    let allItems = [], pageToken = undefined;
+    // ดึงทุกหน้า (pagination)
+    do {
+      const params = {
+        calendarId: CONFIG.CALENDAR_ID,
+        timeMin, timeMax,
+        singleEvents: true,
+        orderBy: 'startTime',
+        maxResults: 250
+      };
+      if (pageToken) params.pageToken = pageToken;
+      const resp = await gapi.client.calendar.events.list(params);
+      const items = resp.result.items || [];
+      allItems = allItems.concat(items);
+      pageToken = resp.result.nextPageToken;
+    } while (pageToken);
+
+    const gEvents = allItems.map(ev => ({
+      id: ev.id,
+      title: ev.summary || '(ไม่มีชื่อ)',
+      start: ev.start.dateTime || ev.start.date || '',
+      end: ev.end?.dateTime || ev.end?.date || '',
+      desc: ev.description || '',
+      location: ev.location || '',
+      priority: ev.extendedProperties?.private?.priority || 'MEDIUM',
+      remind: parseInt(ev.extendedProperties?.private?.remind || '30'),
+      source: 'google',
+      colorId: ev.colorId || '',
+      createdBy: ev.extendedProperties?.private?.createdBy || 'google',
+      gcalLink: ev.htmlLink || ''
+    }));
+
+    // รวม: เก็บ local ที่ไม่ใช่ google + ทั้งหมดจาก google
+    const local = getLocalEvents().filter(e => e.source !== 'google');
+    state.events = [...local, ...gEvents];
+    saveLocalEvents(state.events);
+    localStorage.setItem('gcal_last_sync', new Date().toISOString());
+    setGcalStatus(true);
+    renderCurrentView();
+    renderMiniCal();
+    const d = new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    toast(`Sync สำเร็จ! พบ ${gEvents.length} กิจกรรม (${d})`, 'success');
+    // schedule auto-sync ทุก 5 นาที
+    if (!state.syncTimer) {
+      state.syncTimer = setInterval(loadGoogleEvents, 300000);
+    }
+  } catch(e) {
+    console.error('loadGoogleEvents error:', e);
+    if (e.status === 401 || e.result?.error?.code === 401) {
+      localStorage.removeItem('gapi_token');
+      gapi.client.setToken(null);
+      setGcalStatus(false, true);
+      toast('Session หมดอายุ กรุณาเชื่อมต่อ Google ใหม่', 'error');
+    } else if (e.status === 403) {
+      toast('ไม่มีสิทธิ์เข้าถึง Calendar กรุณาตรวจสอบการ Share', 'error');
+      setGcalStatus(false, true);
+    } else {
+      toast('Sync ล้มเหลว: ' + (e.result?.error?.message || e.message || 'Unknown'), 'error');
+      setGcalStatus(true);
+    }
+  }
+}
+
+async function saveEvent() {
+  const id = document.getElementById('event-id').value;
+  const title = document.getElementById('ev-title').value.trim();
+  if (!title) { toast('กรุณาระบุชื่อกิจกรรม', 'error'); return; }
+  const sd = document.getElementById('ev-start-date').value;
+  const st = document.getElementById('ev-start-time').value;
+  const ed = document.getElementById('ev-end-date').value || sd;
+  const et = document.getElementById('ev-end-time').value;
+  const priority = document.getElementById('ev-priority').value;
+  const remind = parseInt(document.getElementById('ev-remind').value);
+  const location = document.getElementById('ev-location').value;
+  const desc = document.getElementById('ev-desc').value;
+  const start = st ? sd + 'T' + st + ':00' : sd;
+  const end = et ? ed + 'T' + et + ':00' : ed;
+
+  const evData = { title, start, end, priority, remind, location, desc,
+    source: 'local', createdBy: state.currentUser.id };
+
+  if (state.gapiReady && gapi.client.getToken()) {
+    try {
+      const gBody = {
+        summary: title,
+        description: desc,
+        location: location,
+        start: st ? { dateTime: start, timeZone: 'Asia/Bangkok' } : { date: sd },
+        end: et ? { dateTime: end, timeZone: 'Asia/Bangkok' } : { date: ed },
+        extendedProperties: { private: { priority: String(priority), remind: String(remind), createdBy: state.currentUser.id } }
+      };
+      if (id) {
+        await gapi.client.calendar.events.update({ calendarId: CONFIG.CALENDAR_ID, eventId: id, resource: gBody });
+        evData.id = id; evData.source = 'google';
+        state.events = state.events.map(e => e.id === id ? { ...e, ...evData } : e);
+      } else {
+        const res = await gapi.client.calendar.events.insert({ calendarId: CONFIG.CALENDAR_ID, resource: gBody });
+        evData.id = res.result.id; evData.source = 'google';
+        state.events.push(evData);
+      }
+      toast('บันทึกไปยัง Google Calendar แล้ว', 'success');
+    } catch(e) {
+      console.warn('Save to Google failed:', e);
+      evData.id = id || 'loc_' + Date.now();
+      if (id) state.events = state.events.map(e => e.id === id ? { ...e, ...evData } : e);
+      else state.events.push(evData);
+      toast('บันทึกในเครื่อง (Google ไม่ได้เชื่อมต่อ)', 'info');
+    }
+  } else {
+    evData.id = id || 'loc_' + Date.now();
+    if (id) state.events = state.events.map(e => e.id === id ? { ...e, ...evData } : e);
+    else state.events.push(evData);
+    toast('บันทึกสำเร็จ', 'success');
+  }
+  saveLocalEvents(state.events);
+  closeEventModal();
+  renderCurrentView();
+  renderMiniCal();
+  scheduleReminder(evData);
+}
+
+async function deleteEvent() {
+  const id = document.getElementById('event-id').value;
+  if (!id) return;
+  const ev = state.events.find(e => e.id === id);
+  if (!ev) return;
+  const canDelete = state.currentUser.role === 'admin' || ev.createdBy === state.currentUser.id;
+  if (!canDelete) { toast('คุณไม่มีสิทธิ์ลบกิจกรรมนี้', 'error'); return; }
+  if (!confirm('ต้องการลบกิจกรรม "' + ev.title + '" ใช่หรือไม่?')) return;
+  if (state.gapiReady && gapi.client.getToken() && ev.source === 'google') {
+    try { await gapi.client.calendar.events.delete({ calendarId: CONFIG.CALENDAR_ID, eventId: id }); }
+    catch(e) { console.warn('Delete from Google failed:', e); }
+  }
+  state.events = state.events.filter(e => e.id !== id);
+  saveLocalEvents(state.events);
+  closeEventModal();
+  renderCurrentView();
+  renderMiniCal();
+  toast('ลบกิจกรรมแล้ว', 'success');
+}
+
+// ===== QUICK ADD =====
+async function quickAdd() {
+  const title = document.getElementById('quick-title').value.trim();
+  const date = document.getElementById('quick-date').value;
+  const priority = document.getElementById('quick-priority').value;
+  if (!title || !date) { toast('กรุณากรอกชื่อและวันที่', 'error'); return; }
+  const ev = { id: 'loc_' + Date.now(), title, start: date, end: date, priority, remind: 30,
+    location: '', desc: '', source: 'local', createdBy: state.currentUser.id };
+  if (state.gapiReady && gapi.client.getToken()) {
+    try {
+      const res = await gapi.client.calendar.events.insert({
+        calendarId: CONFIG.CALENDAR_ID,
+        resource: { summary: title, start: { date }, end: { date },
+          extendedProperties: { private: { priority, remind: '30', createdBy: state.currentUser.id } } }
+      });
+      ev.id = res.result.id; ev.source = 'google';
+    } catch(e) {}
+  }
+  state.events.push(ev);
+  saveLocalEvents(state.events);
+  document.getElementById('quick-title').value = '';
+  renderCurrentView(); renderMiniCal();
+  toast('เพิ่มกิจกรรมแล้ว', 'success');
+}
+
+// ===== VIEW SYSTEM =====
+function setView(v) {
+  state.view = v;
+  document.querySelectorAll('.nav-btn[data-view]').forEach(el => el.classList.toggle('active', el.dataset.view === v));
+  renderCurrentView();
+}
+
+function renderCurrentView() {
+  const c = document.getElementById('main-content');
+  switch(state.view) {
+    case 'month': renderMonth(c); break;
+    case 'week': renderWeek(c); break;
+    case 'day': renderDay(c); break;
+    case 'year': renderYear(c); break;
+    case 'summary': renderSummary(c); break;
+    case 'admin': renderAdmin(c); break;
+  }
+}
+
+// ===== MONTH VIEW =====
+function renderMonth(c) {
+  const y = state.curDate.getFullYear(), m = state.curDate.getMonth();
+  const months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const days = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+  const today = new Date();
+  const first = new Date(y, m, 1);
+  const last = new Date(y, m+1, 0);
+  const startDay = first.getDay();
+  let html = `
+    <div class="view-header">
+      <button class="view-nav-btn" onclick="prevPeriod()">‹</button>
+      <span class="view-title">${months[m]} ${y + 543}</span>
+      <button class="view-nav-btn" onclick="nextPeriod()">›</button>
+      <button class="today-btn" onclick="goToday()">วันนี้</button>
+      <button class="add-event-btn" onclick="openEventModal()">+ เพิ่มกิจกรรม</button>
+    </div>
+    <div class="month-grid">
+      <div class="month-header">
+        ${days.map(d => `<div class="month-header-cell">${d}</div>`).join('')}
+      </div>
+      <div class="month-body">`;
+  const totalCells = Math.ceil((startDay + last.getDate()) / 7) * 7;
+  for (let i = 0; i < totalCells; i++) {
+    const dayNum = i - startDay + 1;
+    const isOther = dayNum < 1 || dayNum > last.getDate();
+    const dt = isOther ? null : new Date(y, m, dayNum);
+    const isToday = dt && isSameDay(dt, today);
+    const dateStr = dt ? toDateStr(dt) : '';
+    const dayEvents = dt ? getEventsForDay(dateStr) : [];
+    html += `<div class="month-cell ${isOther?'other-month':''} ${isToday?'today':''}" onclick="cellClick('${dateStr}')">`;
+    if (!isOther) {
+      html += `<div class="day-num">${isToday ? dayNum : dayNum}</div>`;
+      const show = dayEvents.slice(0, 3);
+      show.forEach(ev => {
+        const col = priorityColor(ev.priority);
+        html += `<div class="month-event" style="background:${col}22;border-left:3px solid ${col};color:${col}" onclick="event.stopPropagation();showEventPopup('${ev.id}',event)">${ev.title}</div>`;
+      });
+      if (dayEvents.length > 3) html += `<div class="more-events">+${dayEvents.length-3} อีก...</div>`;
+    }
+    html += '</div>';
+  }
+  html += '</div></div>';
+  c.innerHTML = html;
+}
+
+// ===== WEEK VIEW =====
+function renderWeek(c) {
+  const startOfWeek = getWeekStart(state.curDate);
+  const days = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+  const today = new Date();
+  let html = `
+    <div class="view-header">
+      <button class="view-nav-btn" onclick="prevPeriod()">‹</button>
+      <span class="view-title">สัปดาห์ที่ ${getWeekNum(state.curDate)}</span>
+      <button class="view-nav-btn" onclick="nextPeriod()">›</button>
+      <button class="today-btn" onclick="goToday()">วันนี้</button>
+      <button class="add-event-btn" onclick="openEventModal()">+ เพิ่มกิจกรรม</button>
+    </div>
+    <div class="week-grid">
+      <div class="week-header">
+        <div class="week-header-cell" style="font-size:10px;color:var(--text3)">เวลา</div>`;
+  for (let d = 0; d < 7; d++) {
+    const dt = new Date(startOfWeek); dt.setDate(dt.getDate() + d);
+    const isT = isSameDay(dt, today);
+    html += `<div class="week-header-cell ${isT?'today':''}"><div class="wday">${days[d]}</div><div class="wdate" style="${isT?'color:var(--green);text-shadow:0 0 10px var(--green)':''}">${dt.getDate()}</div></div>`;
+  }
+  html += '</div><div class="week-body"><div class="time-col">';
+  for (let h = 0; h < 24; h++) {
+    html += `<div class="time-slot">${String(h).padStart(2,'0')}:00</div>`;
+  }
+  html += '</div>';
+  for (let d = 0; d < 7; d++) {
+    const dt = new Date(startOfWeek); dt.setDate(dt.getDate() + d);
+    const dateStr = toDateStr(dt);
+    const isT = isSameDay(dt, today);
+    const dayEvs = getEventsForDay(dateStr).filter(e => e.start.includes('T'));
+    html += `<div class="week-col ${isT?'today-col':''}">`;
+    for (let h = 0; h < 24; h++) {
+      html += `<div class="week-hour" onclick="openEventModalDate('${dateStr}','${String(h).padStart(2,'0')}:00')"></div>`;
+    }
+    dayEvs.forEach(ev => {
+      const top = getEventTop(ev.start);
+      const height = Math.max(24, getEventHeight(ev.start, ev.end));
+      const col = priorityColor(ev.priority);
+      html += `<div class="week-event" style="top:${top}px;height:${height}px;background:${col}22;border-left:3px solid ${col};color:${col}" onclick="showEventPopup('${ev.id}',event)">${ev.title}</div>`;
+    });
+    html += '</div>';
+  }
+  html += '</div></div>';
+  c.innerHTML = html;
+}
+
+// ===== DAY VIEW =====
+function renderDay(c) {
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const wdays = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
+  const d = state.curDate;
+  const dateStr = toDateStr(d);
+  const dayEvs = getEventsForDay(dateStr);
+  const timedEvs = dayEvs.filter(e => e.start.includes('T'));
+  const allDayEvs = dayEvs.filter(e => !e.start.includes('T'));
+  let html = `
+    <div class="view-header">
+      <button class="view-nav-btn" onclick="prevPeriod()">‹</button>
+      <span class="view-title">${wdays[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}</span>
+      <button class="view-nav-btn" onclick="nextPeriod()">›</button>
+      <button class="today-btn" onclick="goToday()">วันนี้</button>
+      <button class="add-event-btn" onclick="openEventModalDate('${dateStr}')">+ เพิ่มกิจกรรม</button>
+    </div>`;
+  if (allDayEvs.length > 0) {
+    html += `<div style="margin-bottom:12px">`;
+    allDayEvs.forEach(ev => {
+      const col = priorityColor(ev.priority);
+      html += `<div style="padding:8px 12px;background:${col}22;border-left:4px solid ${col};border-radius:4px;color:${col};font-size:13px;margin-bottom:4px;cursor:pointer" onclick="showEventPopup('${ev.id}',event)">${ev.title}</div>`;
+    });
+    html += '</div>';
+  }
+  html += `<div class="day-grid"><div class="day-body"><div class="time-col">`;
+  for (let h = 0; h < 24; h++) html += `<div class="time-slot">${String(h).padStart(2,'0')}:00</div>`;
+  html += '</div><div style="position:relative">';
+  for (let h = 0; h < 24; h++) html += `<div class="day-hour" onclick="openEventModalDate('${dateStr}','${String(h).padStart(2,'0')}:00')"></div>`;
+  timedEvs.forEach(ev => {
+    const top = getEventTop(ev.start);
+    const height = Math.max(32, getEventHeight(ev.start, ev.end));
+    const col = priorityColor(ev.priority);
+    html += `<div class="day-event" style="top:${top}px;height:${height}px;background:${col}22;border-left:4px solid ${col};color:${col}" onclick="event.stopPropagation();showEventPopup('${ev.id}',event)">
+      <div style="font-weight:600">${ev.title}</div>
+      <div style="font-size:10px;opacity:.8">${ev.start.split('T')[1]?.substring(0,5)||''} - ${ev.end?.split('T')[1]?.substring(0,5)||''}</div>
+    </div>`;
+  });
+  html += '</div></div></div>';
+  if (dayEvs.length === 0) html += '<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">ไม่มีกิจกรรมในวันนี้</div></div>';
+  c.innerHTML = html;
+}
+
+// ===== YEAR VIEW =====
+function renderYear(c) {
+  const y = state.curDate.getFullYear();
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const today = new Date();
+  let html = `
+    <div class="view-header">
+      <button class="view-nav-btn" onclick="prevPeriod()">‹</button>
+      <span class="view-title">ปี ${y+543}</span>
+      <button class="view-nav-btn" onclick="nextPeriod()">›</button>
+      <button class="today-btn" onclick="goToday()">ปีนี้</button>
+    </div>
+    <div class="year-grid">`;
+  for (let m = 0; m < 12; m++) {
+    const first = new Date(y, m, 1), last = new Date(y, m+1, 0), sd = first.getDay();
+    const totalEvs = state.events.filter(e => { const d = new Date(e.start); return d.getFullYear()===y && d.getMonth()===m; }).length;
+    html += `<div class="year-month-card" onclick="gotoMonth(${m})"><div class="year-month-title">${months[m]}</div><div class="year-mini-grid">`;
+    for (let i = 0; i < sd; i++) html += '<div class="year-mini-day"></div>';
+    for (let d = 1; d <= last.getDate(); d++) {
+      const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const evs = getEventsForDay(dateStr);
+      const isT = today.getFullYear()===y && today.getMonth()===m && today.getDate()===d;
+      const hasPri = evs.reduce((a,e) => { a[e.priority]=true; return a; }, {});
+      const cls = hasPri.HIGH?'has-high':hasPri.MEDIUM?'has-medium':hasPri.LOW?'has-low':'';
+      html += `<div class="year-mini-day ${cls} ${isT?'today':''}">${d}</div>`;
+    }
+    html += `</div><div class="year-event-count">${totalEvs} กิจกรรม</div></div>`;
+  }
+  html += '</div>';
+  c.innerHTML = html;
+}
+
+// ===== SUMMARY VIEW =====
+function renderSummary(c) {
+  const today = new Date(), y = today.getFullYear(), m = today.getMonth();
+  const weekStart = getWeekStart(today), weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate()+6);
+  const todayStr = toDateStr(today);
+  const todayEvs = getEventsForDay(todayStr);
+  const weekEvs = state.events.filter(e => { const d = new Date(e.start.split('T')[0]); return d >= weekStart && d <= weekEnd; });
+  const monthEvs = state.events.filter(e => { const d = new Date(e.start); return d.getFullYear()===y && d.getMonth()===m; });
+  const yearEvs = state.events.filter(e => new Date(e.start).getFullYear()===y);
+
+  const tabs = [
+    { id:'today', label:'วันนี้', evs: todayEvs },
+    { id:'week', label:'สัปดาห์นี้', evs: weekEvs },
+    { id:'month', label:'เดือนนี้', evs: monthEvs },
+    { id:'year', label:'ปีนี้', evs: yearEvs }
+  ];
+
+  let html = `
+    <div class="view-header"><span class="view-title">สรุปกิจกรรม</span></div>
+    <div class="summary-cards">
+      <div class="summary-card"><div class="summary-card-num">${todayEvs.length}</div><div class="summary-card-label">วันนี้</div></div>
+      <div class="summary-card"><div class="summary-card-num">${weekEvs.length}</div><div class="summary-card-label">สัปดาห์นี้</div></div>
+      <div class="summary-card"><div class="summary-card-num">${monthEvs.length}</div><div class="summary-card-label">เดือนนี้</div></div>
+      <div class="summary-card"><div class="summary-card-num">${yearEvs.length}</div><div class="summary-card-label">ปีนี้</div></div>
+    </div>`;
+
+  html += `<div style="display:flex;gap:8px;margin-bottom:16px" id="sum-tabs">`;
+  tabs.forEach((t,i) => {
+    html += `<button class="nav-btn ${i===0?'active':''}" onclick="switchSumTab(${i})" data-sumtab="${i}">${t.label} (${t.evs.length})</button>`;
+  });
+  html += '</div>';
+
+  tabs.forEach((t, ti) => {
+    html += `<div id="sumtab-${ti}" style="${ti>0?'display:none':''}">`;
+    if (t.evs.length === 0) {
+      html += '<div class="empty-state"><div class="empty-state-icon">✨</div><div class="empty-state-text">ไม่มีกิจกรรม</div></div>';
+    } else {
+      const sorted = [...t.evs].sort((a,b) => {
+        const po = {HIGH:0,MEDIUM:1,LOW:2};
+        return (po[a.priority]||1) - (po[b.priority]||1);
+      });
+      html += '<div class="summary-event-list">';
+      sorted.forEach(ev => {
+        const col = priorityColor(ev.priority);
+        const label = ev.priority==='HIGH'?'สำคัญมาก':ev.priority==='MEDIUM'?'ปานกลาง':'สำคัญน้อย';
+        const dt = ev.start.includes('T') ? ev.start.split('T')[1]?.substring(0,5) : ev.start;
+        html += `<div class="summary-event-row" onclick="showEventPopup('${ev.id}',event)">
+          <div class="priority-badge" style="background:${col}22;color:${col};border:1px solid ${col}44">${label}</div>
+          <div style="flex:1"><div style="font-size:13px;color:var(--text)">${ev.title}</div><div style="font-size:11px;color:var(--text3)">${dt}${ev.location?' · '+ev.location:''}</div></div>
+        </div>`;
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  c.innerHTML = html;
+}
+
+function switchSumTab(idx) {
+  document.querySelectorAll('[data-sumtab]').forEach((el,i) => el.classList.toggle('active', i===idx));
+  for (let i=0;i<4;i++) {
+    const el = document.getElementById('sumtab-'+i);
+    if (el) el.style.display = i===idx ? 'block' : 'none';
+  }
+}
+
+// ===== ADMIN PANEL =====
+function renderAdmin(c) {
+  if (state.currentUser.role !== 'admin') { c.innerHTML = '<div class="empty-state"><div class="empty-state-text">ไม่มีสิทธิ์เข้าถึง</div></div>'; return; }
+  const users = getUsers();
+  let html = `
+    <div class="view-header">
+      <span class="view-title">จัดการผู้ใช้งาน</span>
+      <button class="add-event-btn" onclick="openAddUserModal()">+ เพิ่มผู้ใช้</button>
+    </div>
+    <table class="admin-table">
+      <thead><tr><th>ชื่อ</th><th>Username</th><th>Role</th><th>จัดการ</th></tr></thead>
+      <tbody>`;
+  users.forEach(u => {
+    html += `<tr>
+      <td>${u.name}</td>
+      <td style="font-family:monospace">${u.username}</td>
+      <td><span class="role-badge ${u.role}">${u.role==='admin'?'Admin':'User'}</span></td>
+      <td style="display:flex;gap:6px">
+        ${u.id !== 'admin' ? `
+          <button class="action-btn" style="border-color:var(--border2);color:var(--text2)" onclick="toggleUserRole('${u.id}')">${u.role==='admin'?'→ User':'→ Admin'}</button>
+          <button class="action-btn" style="border-color:#ff446644;color:var(--red)" onclick="removeUser('${u.id}')">ลบ</button>
+        ` : '<span style="font-size:11px;color:var(--text3)">—</span>'}
+      </td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  html += `<div style="margin-top:24px"><div class="section-title">กิจกรรมทั้งหมด (${state.events.length} รายการ)</div>
+    <div class="summary-event-list">`;
+  const sorted = [...state.events].sort((a,b)=>new Date(b.start)-new Date(a.start)).slice(0,20);
+  sorted.forEach(ev => {
+    const col = priorityColor(ev.priority);
+    const u = getUsers().find(x=>x.id===ev.createdBy);
+    html += `<div class="summary-event-row" onclick="showEventPopup('${ev.id}',event)">
+      <div class="priority-badge" style="background:${col}22;color:${col};border:1px solid ${col}44">${ev.priority}</div>
+      <div style="flex:1"><div style="font-size:13px;color:var(--text)">${ev.title}</div>
+        <div style="font-size:11px;color:var(--text3)">${ev.start.split('T')[0]} · ${u?u.name:ev.createdBy}</div></div>
+    </div>`;
+  });
+  html += '</div></div>';
+  c.innerHTML = html;
+}
+
+function toggleUserRole(uid) {
+  const users = getUsers();
+  const u = users.find(x=>x.id===uid);
+  if (!u) return;
+  u.role = u.role === 'admin' ? 'user' : 'admin';
+  saveUsers(users);
+  renderAdmin(document.getElementById('main-content'));
+  toast('เปลี่ยน role ของ ' + u.name + ' แล้ว', 'success');
+}
+
+function removeUser(uid) {
+  if (!confirm('ต้องการลบผู้ใช้นี้ใช่หรือไม่?')) return;
+  const users = getUsers().filter(u => u.id !== uid);
+  saveUsers(users);
+  renderAdmin(document.getElementById('main-content'));
+  toast('ลบผู้ใช้แล้ว', 'success');
+}
+
+// ===== MINI CALENDAR =====
+function renderMiniCal() {
+  const d = state.curDate;
+  const y = d.getFullYear(), m = d.getMonth();
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const today = new Date();
+  const first = new Date(y, m, 1), last = new Date(y, m+1, 0), sd = first.getDay();
+  let html = `<div class="mini-cal-header">
+    <span class="mini-cal-title">${months[m]} ${y+543}</span>
+    <div><button class="mini-nav" onclick="miniPrev()">‹</button><button class="mini-nav" onclick="miniNext()">›</button></div>
+  </div>
+  <div class="mini-grid">
+    ${['อา','จ','อ','พ','พฤ','ศ','ส'].map(d=>`<div class="mini-day-label">${d}</div>`).join('')}`;
+  for (let i=0;i<sd;i++) html+='<div class="mini-day other-month"></div>';
+  for (let day=1;day<=last.getDate();day++) {
+    const dateStr=`${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const isToday=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===day;
+    const hasSel=state.selectedDate===dateStr;
+    const hasEv=getEventsForDay(dateStr).length>0;
+    html+=`<div class="mini-day ${isToday?'today':''} ${hasSel?'selected':''} ${hasEv?'has-event':''}" onclick="miniSelectDay(${day})">${day}</div>`;
+  }
+  html+='</div>';
+  document.getElementById('mini-calendar').innerHTML=html;
+}
+
+function miniSelectDay(d) {
+  const dt = new Date(state.curDate.getFullYear(), state.curDate.getMonth(), d);
+  state.selectedDate = toDateStr(dt);
+  state.curDate = new Date(dt);
+  renderMiniCal();
+  if (state.view === 'month' || state.view === 'week' || state.view === 'day') {
+    setView('day');
+  }
+}
+function miniPrev() { state.curDate = new Date(state.curDate.getFullYear(), state.curDate.getMonth()-1, 1); renderMiniCal(); }
+function miniNext() { state.curDate = new Date(state.curDate.getFullYear(), state.curDate.getMonth()+1, 1); renderMiniCal(); }
+
+// ===== NAV =====
+function prevPeriod() {
+  const d = state.curDate;
+  if (state.view==='month') state.curDate = new Date(d.getFullYear(), d.getMonth()-1, 1);
+  else if (state.view==='week') { state.curDate = new Date(d); state.curDate.setDate(d.getDate()-7); }
+  else if (state.view==='day') { state.curDate = new Date(d); state.curDate.setDate(d.getDate()-1); }
+  else if (state.view==='year') state.curDate = new Date(d.getFullYear()-1, d.getMonth(), 1);
+  renderCurrentView(); renderMiniCal();
+}
+function nextPeriod() {
+  const d = state.curDate;
+  if (state.view==='month') state.curDate = new Date(d.getFullYear(), d.getMonth()+1, 1);
+  else if (state.view==='week') { state.curDate = new Date(d); state.curDate.setDate(d.getDate()+7); }
+  else if (state.view==='day') { state.curDate = new Date(d); state.curDate.setDate(d.getDate()+1); }
+  else if (state.view==='year') state.curDate = new Date(d.getFullYear()+1, d.getMonth(), 1);
+  renderCurrentView(); renderMiniCal();
+}
+function goToday() { state.curDate = new Date(); renderCurrentView(); renderMiniCal(); }
+function gotoMonth(m) { state.curDate = new Date(state.curDate.getFullYear(), m, 1); setView('month'); }
+function cellClick(dateStr) { if (!dateStr) return; state.curDate = new Date(dateStr); state.selectedDate = dateStr; setView('day'); }
+
+// ===== EVENT MODAL =====
+function openEventModal(evId) {
+  const modal = document.getElementById('event-modal');
+  const delBtn = document.getElementById('ev-delete-btn');
+  document.getElementById('event-modal-title').textContent = evId ? 'แก้ไขกิจกรรม' : 'เพิ่มกิจกรรม';
+  if (evId) {
+    const ev = state.events.find(e => e.id === evId);
+    if (!ev) return;
+    document.getElementById('event-id').value = ev.id;
+    document.getElementById('ev-title').value = ev.title;
+    document.getElementById('ev-start-date').value = ev.start.split('T')[0];
+    document.getElementById('ev-start-time').value = ev.start.split('T')[1]?.substring(0,5) || '';
+    document.getElementById('ev-end-date').value = ev.end?.split('T')[0] || '';
+    document.getElementById('ev-end-time').value = ev.end?.split('T')[1]?.substring(0,5) || '';
+    document.getElementById('ev-priority').value = ev.priority || 'MEDIUM';
+    document.getElementById('ev-remind').value = ev.remind || 30;
+    document.getElementById('ev-location').value = ev.location || '';
+    document.getElementById('ev-desc').value = ev.desc || '';
+    const canEdit = state.currentUser.role === 'admin' || ev.createdBy === state.currentUser.id;
+    delBtn.style.display = canEdit ? 'block' : 'none';
+  } else {
+    document.getElementById('event-id').value = '';
+    document.getElementById('ev-title').value = '';
+    document.getElementById('ev-start-date').value = toDateStr(state.curDate);
+    document.getElementById('ev-start-time').value = '';
+    document.getElementById('ev-end-date').value = toDateStr(state.curDate);
+    document.getElementById('ev-end-time').value = '';
+    document.getElementById('ev-priority').value = 'MEDIUM';
+    document.getElementById('ev-remind').value = '30';
+    document.getElementById('ev-location').value = '';
+    document.getElementById('ev-desc').value = '';
+    delBtn.style.display = 'none';
+  }
+  modal.style.display = 'flex';
+}
+
+function openEventModalDate(dateStr, time) {
+  openEventModal();
+  document.getElementById('ev-start-date').value = dateStr;
+  document.getElementById('ev-end-date').value = dateStr;
+  if (time) { document.getElementById('ev-start-time').value = time; }
+}
+
+function closeEventModal() { document.getElementById('event-modal').style.display = 'none'; }
+
+// ===== EVENT POPUP =====
+function showEventPopup(evId, e) {
+  e.stopPropagation();
+  document.querySelectorAll('.event-popup').forEach(p => p.remove());
+  const ev = state.events.find(x => x.id === evId);
+  if (!ev) return;
+  const col = priorityColor(ev.priority);
+  const label = ev.priority==='HIGH'?'สำคัญมาก':ev.priority==='MEDIUM'?'สำคัญปานกลาง':'สำคัญน้อย';
+  const canEdit = state.currentUser.role === 'admin' || ev.createdBy === state.currentUser.id;
+  const popup = document.createElement('div');
+  popup.className = 'event-popup';
+  const x = Math.min(e.clientX, window.innerWidth-300);
+  const y2 = Math.min(e.clientY+10, window.innerHeight-200);
+  popup.style.cssText = `left:${x}px;top:${y2}px`;
+  popup.innerHTML = `
+    <div style="border-left:3px solid ${col};padding-left:10px;margin-bottom:10px">
+      <div class="event-popup-title">${ev.title}</div>
+      <div class="event-popup-row">📅 ${ev.start.split('T')[0]}${ev.start.includes('T')?' '+ev.start.split('T')[1].substring(0,5):''}</div>
+      ${ev.location?`<div class="event-popup-row">📍 ${ev.location}</div>`:''}
+      ${ev.desc?`<div class="event-popup-row" style="white-space:pre-wrap">📝 ${ev.desc.substring(0,80)}${ev.desc.length>80?'...':''}</div>`:''}
+      <div class="event-popup-row"><span class="priority-badge" style="background:${col}22;color:${col};border:1px solid ${col}44">${label}</span></div>
+    </div>
+    <div class="event-popup-actions">
+      ${canEdit?`<button class="popup-btn" style="border-color:var(--green3);color:var(--green)" onclick="editFromPopup('${evId}')">แก้ไข</button>`:''}
+      ${canEdit?`<button class="popup-btn" style="border-color:#ff446644;color:var(--red)" onclick="deleteFromPopup('${evId}')">ลบ</button>`:''}
+      <button class="popup-btn" style="border-color:var(--border2);color:var(--text2)" onclick="this.closest('.event-popup').remove()">ปิด</button>
+    </div>`;
+  document.body.appendChild(popup);
+  setTimeout(() => document.addEventListener('click', () => popup.remove(), {once:true}), 100);
+}
+
+function editFromPopup(evId) {
+  document.querySelectorAll('.event-popup').forEach(p => p.remove());
+  openEventModal(evId);
+}
+
+function deleteFromPopup(evId) {
+  document.querySelectorAll('.event-popup').forEach(p => p.remove());
+  document.getElementById('event-id').value = evId;
+  deleteEvent();
+}
+
+// ===== LINE NOTIFY =====
+function openSettings() {
+  const modal = document.getElementById('line-modal');
+  const token = state.currentUser.lineToken || localStorage.getItem('line_token_'+state.currentUser.id) || '';
+  document.getElementById('line-token').value = token;
+  const connected = !!token;
+  document.getElementById('line-dot').className = 'status-dot ' + (connected?'connected':'disconnected');
+  document.getElementById('line-status-text').textContent = connected ? 'เชื่อมต่อแล้ว' : 'ยังไม่ได้ตั้งค่า Token';
+  modal.style.display = 'flex';
+}
+
+function closeLineModal() { document.getElementById('line-modal').style.display = 'none'; }
+
+function saveLineToken() {
+  const token = document.getElementById('line-token').value.trim();
+  localStorage.setItem('line_token_'+state.currentUser.id, token);
+  const users = getUsers();
+  const u = users.find(x=>x.id===state.currentUser.id);
+  if (u) { u.lineToken = token; saveUsers(users); state.currentUser.lineToken = token; }
+  document.getElementById('line-dot').className = 'status-dot ' + (token?'connected':'disconnected');
+  document.getElementById('line-status-text').textContent = token ? 'เชื่อมต่อแล้ว' : 'ยังไม่ได้ตั้งค่า Token';
+  toast('บันทึก LINE Token แล้ว', 'success');
+}
+
+async function sendLineNotify(msg) {
+  const token = localStorage.getItem('line_token_'+state.currentUser?.id) || state.currentUser?.lineToken;
+  if (!token) return;
+  try {
+    await fetch('https://notify-api.line.me/api/notify', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer '+token, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'message=' + encodeURIComponent(msg),
+      mode: 'no-cors'
+    });
+  } catch(e) { console.warn('LINE notify failed:', e); }
+}
+
+function testLineNotify() {
+  const token = document.getElementById('line-token').value.trim();
+  if (!token) { toast('กรุณาใส่ LINE Token ก่อน', 'error'); return; }
+  localStorage.setItem('line_token_'+state.currentUser.id, token);
+  sendLineNotify('🔔 ทดสอบการแจ้งเตือนจากระบบปฏิทิน\nเชื่อมต่อสำเร็จแล้ว! ✅');
+  toast('ส่งข้อความทดสอบไปยัง LINE แล้ว (ตรวจสอบใน LINE)', 'success');
+}
+
+function scheduleReminder(ev) {
+  if (!ev.remind || ev.remind === 0) return;
+  const startTime = new Date(ev.start);
+  const remindAt = new Date(startTime.getTime() - ev.remind * 60000);
+  const now = new Date();
+  const delay = remindAt.getTime() - now.getTime();
+  if (delay > 0 && delay < 86400000) {
+    setTimeout(() => {
+      const notifyHigh = document.getElementById('notify-high')?.checked !== false;
+      const notifyMed = document.getElementById('notify-medium')?.checked !== false;
+      const notifyLow = document.getElementById('notify-low')?.checked;
+      const shouldNotify = (ev.priority==='HIGH'&&notifyHigh)||(ev.priority==='MEDIUM'&&notifyMed)||(ev.priority==='LOW'&&notifyLow);
+      if (shouldNotify) {
+        const label = ev.priority==='HIGH'?'🔴':ev.priority==='MEDIUM'?'🟡':'🟢';
+        sendLineNotify(`${label} แจ้งเตือนกิจกรรม!\n📌 ${ev.title}\n📅 ${ev.start.split('T')[0]} ${ev.start.split('T')[1]?.substring(0,5)||''}\n⏰ อีก ${ev.remind} นาที`);
+        toast('แจ้งเตือน: '+ev.title, 'info');
+      }
+    }, delay);
+  }
+}
+
+function startNotifyScheduler() {
+  state.events.forEach(ev => scheduleReminder(ev));
+  const checkDaily = () => {
+    const now = new Date();
+    if (now.getHours()===8 && now.getMinutes()===0) {
+      const notifyDaily = document.getElementById('notify-daily')?.checked;
+      if (notifyDaily) {
+        const todayEvs = getEventsForDay(toDateStr(now));
+        if (todayEvs.length > 0) {
+          const msg = `📅 กิจกรรมวันนี้ (${todayEvs.length} รายการ)\n` +
+            todayEvs.slice(0,5).map(e=>`• ${e.title}`).join('\n');
+          sendLineNotify(msg);
+        }
+      }
+    }
+  };
+  setInterval(checkDaily, 60000);
+}
+
+// ===== HELPERS =====
+function getEventsForDay(dateStr) {
+  return state.events.filter(e => {
+    const start = e.start.split('T')[0];
+    const end = (e.end || e.start).split('T')[0];
+    return dateStr >= start && dateStr <= end;
+  });
+}
+function priorityColor(p) { return p==='HIGH'?'var(--red)':p==='MEDIUM'?'var(--yellow)':'var(--green)'; }
+function toDateStr(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function isSameDay(a, b) { return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+function getWeekStart(d) { const start=new Date(d); start.setDate(d.getDate()-d.getDay()); start.setHours(0,0,0,0); return start; }
+function getWeekNum(d) { const start=new Date(d.getFullYear(),0,1); return Math.ceil(((d-start)/86400000+start.getDay()+1)/7); }
+function getEventTop(dtStr) { const t=dtStr.split('T')[1]||'00:00'; const [h,min]=t.split(':').map(Number); return h*48+min*0.8; }
+function getEventHeight(s, e) { if (!e||!s.includes('T')) return 48; const st=new Date(s),en=new Date(e); return Math.max(24,(en-st)/60000*0.8); }
+
+function toast(msg, type='info') {
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 3000);
+}
+
+// ===== INIT =====
+initAdmin();
+const session = localStorage.getItem('cal_session');
+if (session) {
+  try {
+    const user = JSON.parse(session);
+    const fresh = getUsers().find(u => u.id === user.id);
+    if (fresh) loginSuccess(fresh);
+  } catch(e) {}
+}
+</script>
+</body>
+</html>
