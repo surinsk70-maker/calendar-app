@@ -1024,53 +1024,121 @@ async function saveEvent() {
   const id = document.getElementById('event-id').value;
   const title = document.getElementById('ev-title').value.trim();
   if (!title) { toast('กรุณาระบุชื่อกิจกรรม', 'error'); return; }
+
   const sd = document.getElementById('ev-start-date').value;
   const st = document.getElementById('ev-start-time').value;
   const ed = document.getElementById('ev-end-date').value || sd;
   const et = document.getElementById('ev-end-time').value;
+  if (!sd) { toast('กรุณาระบุวันที่เริ่มต้น', 'error'); return; }
+
   const priority = document.getElementById('ev-priority').value;
-  const remind = parseInt(document.getElementById('ev-remind').value);
-  const location = document.getElementById('ev-location').value;
-  const desc = document.getElementById('ev-desc').value;
-  const start = st ? sd + 'T' + st + ':00' : sd;
-  const end = et ? ed + 'T' + et + ':00' : ed;
+  const remind   = parseInt(document.getElementById('ev-remind').value) || 0;
+  const location = document.getElementById('ev-location').value.trim();
+  const desc     = document.getElementById('ev-desc').value.trim();
 
-  const evData = { title, start, end, priority, remind, location, desc,
-    source: 'local', createdBy: state.currentUser.id };
+  // build ISO strings
+  const startISO = st ? (sd + 'T' + st + ':00') : sd;
+  // Google Calendar ต้องการ end date เป็นวันถัดไปสำหรับ all-day event
+  let endISO;
+  if (et) {
+    endISO = ed + 'T' + et + ':00';
+  } else {
+    // all-day: end = วันถัดจาก ed
+    const endDate = new Date(ed);
+    endDate.setDate(endDate.getDate() + 1);
+    endISO = toDateStr(endDate);
+  }
 
-  if (state.gapiReady && gapi.client.getToken()) {
+  const evData = {
+    title, start: startISO, end: endISO,
+    priority, remind, location, desc,
+    source: 'local', createdBy: state.currentUser.id
+  };
+
+  // ตรวจสอบว่าเชื่อมต่อ Google หรือยัง
+  const isGapiReady  = state.gapiReady;
+  const hasToken     = isGapiReady && !!gapi.client.getToken();
+
+  if (!isGapiReady) {
+    toast('⚠ Google API ยังไม่พร้อม — บันทึกในเครื่องไว้ก่อน', 'info');
+  } else if (!hasToken) {
+    toast('⚠ ยังไม่ได้เชื่อมต่อ Google Calendar — กด "เชื่อมต่อ Google" ใน sidebar ก่อนนะครับ', 'error');
+    // บันทึก local ไว้ก่อน
+    evData.id = id || 'loc_' + Date.now();
+    if (id) state.events = state.events.map(e => e.id === id ? { ...e, ...evData } : e);
+    else state.events.push(evData);
+    saveLocalEvents(state.events);
+    closeEventModal(); renderCurrentView(); renderMiniCal();
+    return;
+  }
+
+  if (hasToken) {
     try {
+      // Google Calendar event body
       const gBody = {
         summary: title,
-        description: desc,
-        location: location,
-        start: st ? { dateTime: start, timeZone: 'Asia/Bangkok' } : { date: sd },
-        end: et ? { dateTime: end, timeZone: 'Asia/Bangkok' } : { date: ed },
-        extendedProperties: { private: { priority: String(priority), remind: String(remind), createdBy: state.currentUser.id } }
+        description: desc || '',
+        location: location || '',
+        start: st ? { dateTime: startISO, timeZone: 'Asia/Bangkok' }
+                  : { date: sd },
+        end:   et ? { dateTime: endISO,   timeZone: 'Asia/Bangkok' }
+                  : { date: endISO },
+        extendedProperties: {
+          private: {
+            priority:  String(priority),
+            remind:    String(remind),
+            createdBy: state.currentUser.id
+          }
+        }
       };
-      if (id) {
-        await gapi.client.calendar.events.update({ calendarId: CONFIG.CALENDAR_ID, eventId: id, resource: gBody });
-        evData.id = id; evData.source = 'google';
-        state.events = state.events.map(e => e.id === id ? { ...e, ...evData } : e);
+
+      let savedId;
+      if (id && !id.startsWith('loc_')) {
+        // แก้ไข event ที่มีอยู่ใน Google
+        await gapi.client.calendar.events.update({
+          calendarId: CONFIG.CALENDAR_ID, eventId: id, resource: gBody
+        });
+        savedId = id;
       } else {
-        const res = await gapi.client.calendar.events.insert({ calendarId: CONFIG.CALENDAR_ID, resource: gBody });
-        evData.id = res.result.id; evData.source = 'google';
-        state.events.push(evData);
+        // สร้างใหม่
+        const res = await gapi.client.calendar.events.insert({
+          calendarId: CONFIG.CALENDAR_ID, resource: gBody
+        });
+        savedId = res.result.id;
       }
-      toast('บันทึกไปยัง Google Calendar แล้ว', 'success');
-    } catch(e) {
-      console.warn('Save to Google failed:', e);
+
+      evData.id     = savedId;
+      evData.source = 'google';
+
+      if (id) state.events = state.events.map(e => e.id === id ? { ...e, ...evData } : e);
+      else    state.events.push(evData);
+
+      toast('✅ บันทึกไปยัง Google Calendar แล้ว!', 'success');
+
+    } catch(err) {
+      console.error('Save to Google failed:', err);
+      const msg = err.result?.error?.message || err.message || 'unknown error';
+
+      // token หมดอายุ
+      if (err.status === 401) {
+        localStorage.removeItem('gapi_token');
+        gapi.client.setToken(null);
+        setGcalStatus(false, true);
+        toast('❌ Token หมดอายุ กรุณากด "เชื่อมต่อ Google" ใหม่', 'error');
+      } else {
+        toast('❌ บันทึกไป Google ไม่ได้: ' + msg, 'error');
+      }
+      // fallback บันทึก local
       evData.id = id || 'loc_' + Date.now();
       if (id) state.events = state.events.map(e => e.id === id ? { ...e, ...evData } : e);
-      else state.events.push(evData);
-      toast('บันทึกในเครื่อง (Google ไม่ได้เชื่อมต่อ)', 'info');
+      else    state.events.push(evData);
     }
   } else {
     evData.id = id || 'loc_' + Date.now();
     if (id) state.events = state.events.map(e => e.id === id ? { ...e, ...evData } : e);
-    else state.events.push(evData);
-    toast('บันทึกสำเร็จ', 'success');
+    else    state.events.push(evData);
   }
+
   saveLocalEvents(state.events);
   closeEventModal();
   renderCurrentView();
@@ -1087,9 +1155,14 @@ async function deleteEvent() {
   const canDelete = state.currentUser.role === 'admin' || ev.createdBy === state.currentUser.id;
   if (!canDelete) { toast('คุณไม่มีสิทธิ์ลบกิจกรรมนี้', 'error'); return; }
   if (!confirm('ต้องการลบกิจกรรม "' + ev.title + '" ใช่หรือไม่?')) return;
-  if (state.gapiReady && gapi.client.getToken() && ev.source === 'google') {
-    try { await gapi.client.calendar.events.delete({ calendarId: CONFIG.CALENDAR_ID, eventId: id }); }
-    catch(e) { console.warn('Delete from Google failed:', e); }
+  if (state.gapiReady && gapi.client.getToken() && ev.source === 'google' && !id.startsWith('loc_')) {
+    try {
+      await gapi.client.calendar.events.delete({ calendarId: CONFIG.CALENDAR_ID, eventId: id });
+      toast('ลบออกจาก Google Calendar แล้ว', 'success');
+    } catch(e) {
+      console.warn('Delete from Google failed:', e);
+      if (e.status === 401) { localStorage.removeItem('gapi_token'); gapi.client.setToken(null); setGcalStatus(false, true); }
+    }
   }
   state.events = state.events.filter(e => e.id !== id);
   saveLocalEvents(state.events);
