@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ระบบปฏิทิน — Anime Glow</title>
+<title>ระบบปฏิทิน—กิจกรรม สสอ.สังขะ</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 /* ===== ROOT VARIABLES ===== */
@@ -449,11 +449,103 @@ body::after {
 .guest-mode .sidebar-quick-add,
 .guest-mode .topbar-actions,
 .guest-mode .icon-btn { display: none !important; }
-/* ===== RESPONSIVE ===== */
+/* ===== RESPONSIVE MOBILE ===== */
 @media (max-width:768px) {
-  .sidebar { display:none; }
-  .summary-cards { grid-template-columns:repeat(2,1fr); }
-  .year-grid { grid-template-columns:repeat(2,1fr); }
+  /* layout */
+  .sidebar { display:none !important; }
+  .content { padding:12px 8px; }
+  .main { flex-direction:column; }
+
+  /* topbar */
+  .topbar { padding:0 10px; gap:6px; height:52px; }
+  .topbar-logo { font-size:13px; letter-spacing:1px; }
+  .topbar-nav { display:none; }
+  .topbar-user { gap:4px; }
+  #top-username { display:none; }
+
+  /* bottom nav bar สำหรับมือถือ */
+  #mobile-nav {
+    display:flex !important;
+    position:fixed; bottom:0; left:0; right:0; z-index:800;
+    background:var(--card); border-top:1px solid var(--border2);
+    padding:6px 0 env(safe-area-inset-bottom,6px);
+  }
+  .mobile-nav-btn {
+    flex:1; display:flex; flex-direction:column; align-items:center;
+    gap:2px; padding:6px 4px; background:none; border:none;
+    color:var(--text3); font-family:var(--font); font-size:9px; cursor:pointer;
+    transition:color .2s;
+  }
+  .mobile-nav-btn .nav-icon { font-size:18px; line-height:1; }
+  .mobile-nav-btn.active { color:var(--green); }
+  .mobile-nav-btn.active .nav-icon { filter:drop-shadow(0 0 4px var(--green)); }
+
+  /* content padding bottom (bottom nav) */
+  .content { padding-bottom:70px; }
+
+  /* auth */
+  .auth-box { padding:28px 20px; margin:12px; }
+  .auth-logo .logo-text { font-size:22px; }
+
+  /* view header */
+  .view-header { flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  .view-title { font-size:16px; }
+  .add-event-btn { padding:7px 14px; font-size:12px; }
+
+  /* month grid */
+  .month-cell { min-height:56px; padding:4px; }
+  .month-header-cell { font-size:10px; padding:6px 2px; }
+  .day-num { font-size:11px; width:20px; height:20px; }
+  .month-event { font-size:9px; padding:1px 4px; }
+
+  /* week grid */
+  .week-header-cell { font-size:9px; padding:6px 2px; }
+  .week-header-cell .wdate { font-size:13px; }
+  .time-slot { font-size:9px; padding:0 4px; }
+
+  /* summary */
+  .summary-cards { grid-template-columns:repeat(2,1fr); gap:8px; }
+  .summary-card-num { font-size:24px; }
+  .summary-card { padding:12px; }
+
+  /* year */
+  .year-grid { grid-template-columns:repeat(2,1fr); gap:8px; }
+  .year-month-card { padding:10px; }
+
+  /* modal */
+  .modal { margin:0; border-radius:16px 16px 0 0; max-height:92vh; }
+  .modal-overlay { align-items:flex-end; padding:0; }
+  .form-row { grid-template-columns:1fr; gap:8px; }
+
+  /* event popup */
+  .event-popup { width:calc(100vw - 32px); left:16px !important; }
+
+  /* toast */
+  .toast-container { left:12px; right:12px; top:60px; }
+  .toast { min-width:unset; font-size:12px; }
+
+  /* admin table */
+  .admin-table th:nth-child(2), .admin-table td:nth-child(2) { display:none; }
+
+  /* guest banner */
+  .guest-banner { font-size:11px; padding:5px 12px; }
+}
+
+/* FAB button เพิ่มกิจกรรม (มือถือ) */
+#fab-add {
+  display:none;
+  position:fixed; bottom:72px; right:16px; z-index:700;
+  width:52px; height:52px; border-radius:50%;
+  background:linear-gradient(135deg,var(--green),var(--green2));
+  border:none; color:var(--bg); font-size:26px; font-weight:300;
+  cursor:pointer; box-shadow:0 4px 20px var(--green3);
+  align-items:center; justify-content:center;
+  transition:transform .2s;
+}
+#fab-add:active { transform:scale(.92); }
+@media (max-width:768px) {
+  #fab-add { display:flex !important; }
+  .add-event-btn { display:none !important; }
 }
 </style>
 </head>
@@ -710,6 +802,28 @@ body::after {
   </div>
 </div>
 
+<!-- ===== MOBILE BOTTOM NAV ===== -->
+<nav id="mobile-nav" style="display:none">
+  <button class="mobile-nav-btn active" data-view="month" onclick="setView('month')">
+    <span class="nav-icon">📅</span>เดือน
+  </button>
+  <button class="mobile-nav-btn" data-view="week" onclick="setView('week')">
+    <span class="nav-icon">📆</span>สัปดาห์
+  </button>
+  <button class="mobile-nav-btn" data-view="day" onclick="setView('day')">
+    <span class="nav-icon">🗓</span>วัน
+  </button>
+  <button class="mobile-nav-btn" data-view="summary" onclick="setView('summary')">
+    <span class="nav-icon">📊</span>สรุป
+  </button>
+  <button class="mobile-nav-btn" data-view="year" onclick="setView('year')">
+    <span class="nav-icon">🗃</span>ปี
+  </button>
+</nav>
+
+<!-- ===== FAB ADD BUTTON (MOBILE) ===== -->
+<button id="fab-add" onclick="openEventModal()" title="เพิ่มกิจกรรม">+</button>
+
 <!-- ===== GOOGLE GAPI ===== -->
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
@@ -786,6 +900,11 @@ function loginSuccess(user) {
   badge.className = 'user-badge' + (user.role === 'admin' ? ' admin' : '');
   if (user.role === 'admin') {
     document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+  }
+  // show mobile nav
+  if (window.innerWidth <= 768) {
+    const nav = document.getElementById('mobile-nav');
+    if (nav) nav.style.display = 'flex';
   }
   const d = document.getElementById('quick-date');
   d.value = toDateStr(new Date());
@@ -1201,7 +1320,13 @@ async function quickAdd() {
 // ===== VIEW SYSTEM =====
 function setView(v) {
   state.view = v;
+  // topbar nav (desktop)
   document.querySelectorAll('.nav-btn[data-view]').forEach(el => el.classList.toggle('active', el.dataset.view === v));
+  // bottom nav (mobile)
+  document.querySelectorAll('.mobile-nav-btn[data-view]').forEach(el => el.classList.toggle('active', el.dataset.view === v));
+  // hide FAB on admin/summary views
+  const fab = document.getElementById('fab-add');
+  if (fab) fab.style.display = (v === 'admin') ? 'none' : '';
   renderCurrentView();
 }
 
@@ -1781,6 +1906,8 @@ function enterGuestMode() {
   badge.textContent = 'GUEST';
   badge.style.cssText = 'background:#ffffff11;border:1px solid #ffffff22;color:#aaaaaa;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600';
   document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+  // show mobile nav
+  if (window.innerWidth <= 768) { const nav = document.getElementById('mobile-nav'); if (nav) nav.style.display = 'flex'; }
   // โหลด events จาก localStorage ก่อน แล้วค่อย fetch จาก Google Calendar ผ่าน API Key
   state.events = getLocalEvents();
   renderCurrentView();
@@ -1857,6 +1984,8 @@ function exitGuestMode() {
   document.getElementById('app').classList.remove('show', 'guest-mode');
   document.getElementById('guest-banner').style.display = 'none';
   document.getElementById('auth-screen').style.display = 'flex';
+  const nav = document.getElementById('mobile-nav');
+  if (nav) nav.style.display = 'none';
   if (state.syncTimer) { clearInterval(state.syncTimer); state.syncTimer = null; }
 }
 
@@ -1868,6 +1997,13 @@ function checkGuestBlock(action) {
   }
   return false;
 }
+
+// ===== RESIZE HANDLER =====
+window.addEventListener('resize', () => {
+  const nav = document.getElementById('mobile-nav');
+  if (!nav || !state.currentUser) return;
+  nav.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+});
 
 // ===== INIT =====
 initAdmin();
